@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: billing_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      # Note: MONGO_URI and JWT_SECRET should be provided via a .env file
+      # or environment variables during deployment.
+    env_file:
+      - ./server/.env
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: billing_frontend
+    ports:
+      - "5173:80" # Maps local port 5173 to NGINX port 80
+    depends_on:
+      - server
+    restart: unless-stopped

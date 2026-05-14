@@ -1,0 +1,8 @@
+{
+  "name": "billing-software",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm install --prefix client && npm run build --prefix client"
+  }
+}
