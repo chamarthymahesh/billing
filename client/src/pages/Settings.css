@@ -1,0 +1,77 @@
+.settings-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  margin-bottom: 40px;
+}
+
+.form-message {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.form-message.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.form-message.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.loading-state {
+  text-align: center;
+  padding: 50px;
+  color: var(--text-muted);
+}
+
+.settings-info-box {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.settings-info-box b {
+  color: var(--primary);
+  letter-spacing: 0.5px;
+}
+
+.error-container {
+  max-width: 500px;
+  margin: 100px auto;
+  text-align: center;
+  padding: 40px;
+}
+
+.error-container h2 {
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+
+.error-container p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}

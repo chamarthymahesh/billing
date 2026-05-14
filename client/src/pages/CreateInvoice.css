@@ -1,0 +1,148 @@
+.invoice-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-section { padding: 24px; }
+
+.gst-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.toggle-btn {
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) { .form-grid-2 { grid-template-columns: 1fr; } }
+
+.items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.btn-sm { padding: 8px 14px; font-size: 0.85rem; border-radius: 8px; }
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 900px;
+}
+
+.items-table th {
+  padding: 10px 10px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.items-table td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+
+.item-input {
+  min-width: 80px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.item-input.sm { min-width: 60px; max-width: 110px; }
+
+.calc-cell { color: var(--text-muted); white-space: nowrap; padding: 10px 12px; }
+.gst-cell { color: #10b981; }
+.total-cell { color: white; font-weight: 600; }
+
+.remove-btn {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+  border: none;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover { background: rgba(239,68,68,0.3); }
+
+.rate-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.purchase-hint {
+  font-size: 0.72rem;
+  color: #f59e0b;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.form-bottom {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 960px) { .form-bottom { grid-template-columns: 1fr; } }
+
+.charges-card, .summary-card { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+.summary-rows { display: flex; flex-direction: column; gap: 0; }
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.summary-row span:last-child { font-weight: 600; color: white; }
+
+.summary-row.grand {
+  border-bottom: none;
+  border-top: 2px solid var(--primary);
+  margin-top: 8px;
+  padding-top: 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.summary-row.grand span { color: #10b981 !important; font-size: 1.2rem; }
+
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  margin-top: 8px;
+}
