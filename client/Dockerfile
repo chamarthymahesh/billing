@@ -9,6 +9,7 @@ RUN npm install
 
 # Copy source code and build the React app
 COPY . .
+RUN chmod -R +x node_modules/.bin
 RUN npm run build
 
 # Production stage
