@@ -4,6 +4,7 @@ const invoiceSchema = new mongoose.Schema({
   invoiceNumber: { type: String, required: true },
   date: { type: Date, default: Date.now },
   dueDate: { type: Date },
+  gemContractNumber: { type: String },
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   customer: {
     name: String,

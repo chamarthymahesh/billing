@@ -21,6 +21,7 @@ export default function CreateInvoice() {
     isGst: true,
     date: new Date().toISOString().split('T')[0],
     dueDate: '',
+    gemContractNumber: '',
     customer: { 
       name: '', address: '', phone: '', gstin: '', state: '', placeOfSupply: '',
       shippingAddress: '', sameAsBilling: true 
@@ -209,9 +210,9 @@ export default function CreateInvoice() {
                 onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
             </div>
             <div className="form-group">
-              <label>Due Date (Optional)</label>
-              <input type="date" className="input-field" value={form.dueDate}
-                onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
+              <label>GeM Contract Number (Optional)</label>
+              <input className="input-field" placeholder="e.g., GEMC-5116877..." value={form.gemContractNumber}
+                onChange={e => setForm(f => ({ ...f, gemContractNumber: e.target.value }))} />
             </div>
           </div>
         </div>

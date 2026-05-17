@@ -8,6 +8,7 @@ const companySchema = new mongoose.Schema({
   email: { type: String, required: true },
   state: { type: String, default: 'Maharashtra' }, // Home state for GST comparison
   logo: { type: String, default: '' },
+  signatureImage: { type: String, default: '' },
   bankDetails: {
     bankName: String,
     accountNo: String,

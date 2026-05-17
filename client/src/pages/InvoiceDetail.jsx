@@ -61,10 +61,10 @@ export default function InvoiceDetail() {
               <span className="meta-label">Date:</span>
               <span className="meta-value">{new Date(invoice.date).toLocaleDateString('en-IN')}</span>
             </div>
-            {invoice.dueDate && (
+            {invoice.gemContractNumber && (
               <div className="meta-row">
-                <span className="meta-label">Due Date:</span>
-                <span className="meta-value">{new Date(invoice.dueDate).toLocaleDateString('en-IN')}</span>
+                <span className="meta-label">GeM Contract:</span>
+                <span className="meta-value">{invoice.gemContractNumber}</span>
               </div>
             )}
             <div className={`status-tag status-${invoice.status}`}>
@@ -188,7 +188,16 @@ export default function InvoiceDetail() {
 
         {/* Footer */}
         <div className="invoice-footer">
-          <div className="footer-sign">
+          <div className="footer-sign" style={{ textAlign: 'center' }}>
+            {invoice.companyId?.signatureImage ? (
+              <img 
+                src={invoice.companyId.signatureImage} 
+                alt="Digital Signature" 
+                style={{ maxHeight: '80px', maxWidth: '200px', objectFit: 'contain', marginBottom: '10px' }} 
+              />
+            ) : (
+              <div style={{ height: '80px' }}></div>
+            )}
             <div className="sign-line"></div>
             <p>Authorized Signatory</p>
           </div>

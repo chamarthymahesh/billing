@@ -22,6 +22,21 @@ export default function Settings() {
     }
   }, [user]);
 
+  const handleImageUpload = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        alert('File size should be less than 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCompany({ ...company, [field]: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -89,6 +104,28 @@ export default function Settings() {
                 <label>Address</label>
                 <textarea className="input-field" value={company?.address || ''} rows="2"
                   onChange={e => setCompany({...company, address: e.target.value})} required />
+              </div>
+            </div>
+          </div>
+
+          {/* Branding / Images */}
+          <div className="glass-card settings-section">
+            <h2 className="section-title">Branding & Assets</h2>
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label>Digital Signature / Stamp (For Invoices)</label>
+                <input 
+                  type="file" 
+                  accept="image/png, image/jpeg, image/jpg" 
+                  className="input-field" 
+                  onChange={e => handleImageUpload(e, 'signatureImage')} 
+                />
+                <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>Upload a PNG/JPG with transparent/white background (Max 2MB).</p>
+                {company?.signatureImage && (
+                  <div style={{ marginTop: '10px' }}>
+                    <img src={company.signatureImage} alt="Signature Preview" style={{ maxHeight: '80px', objectFit: 'contain', background: '#fff', padding: '5px', borderRadius: '4px' }} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
