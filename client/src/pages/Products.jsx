@@ -168,27 +168,27 @@ export default function Products() {
                 <div className="form-divider" style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '10px 0' }}></div>
                 <div className="form-group">
                   <label>Purchase Price (₹)</label>
-                  <input type="number" className="input-field" min="0" value={form.purchasePrice}
+                  <input type="number" step="any" className="input-field" min="0" value={form.purchasePrice}
                     onChange={e => setForm(f => ({ ...f, purchasePrice: Number(e.target.value) }))} />
                 </div>
                 <div className="form-group">
                   <label>Selling Price (₹) *</label>
-                  <input type="number" className="input-field" required min="0" value={form.price}
+                  <input type="number" step="any" className="input-field" required min="0" value={form.price}
                     onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} />
                 </div>
                 <div className="form-group">
                   <label>M.R.P. (₹)</label>
-                  <input type="number" className="input-field" min="0" value={form.mrp}
+                  <input type="number" step="any" className="input-field" min="0" value={form.mrp}
                     onChange={e => setForm(f => ({ ...f, mrp: Number(e.target.value) }))} />
                 </div>
                 <div className="form-group">
                   <label>Initial Stock</label>
-                  <input type="number" className="input-field" min="0" value={form.stock}
+                  <input type="number" step="any" className="input-field" min="0" value={form.stock}
                     onChange={e => setForm(f => ({ ...f, stock: Number(e.target.value) }))} />
                 </div>
                 <div className="form-group">
                   <label>Min Stock Level (Alert)</label>
-                  <input type="number" className="input-field" min="0" value={form.minStockLevel}
+                  <input type="number" step="any" className="input-field" min="0" value={form.minStockLevel}
                     onChange={e => setForm(f => ({ ...f, minStockLevel: Number(e.target.value) }))} />
                 </div>
                 <div className="form-group" style={{ gridColumn: '1/-1' }}>
