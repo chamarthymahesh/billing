@@ -21,6 +21,8 @@ const invoiceSchema = new mongoose.Schema({
     hsnCode: String,
     quantity: Number,
     rate: Number,
+    purchasePrice: { type: Number, default: 0 },
+    profit: { type: Number, default: 0 },
     gstRate: Number, // Percentage (e.g., 18)
     amount: Number,
     cgst: Number,
@@ -35,6 +37,7 @@ const invoiceSchema = new mongoose.Schema({
   commissionStatus: { type: String, enum: ['unpaid', 'paid'], default: 'unpaid' },
   adjustment: { type: Number, default: 0 },
   grandTotal: { type: Number, required: true },
+  totalProfit: { type: Number, default: 0 },
   isGst: { type: Boolean, default: false },
   status: { type: String, enum: ['paid', 'unpaid', 'partially_paid'], default: 'unpaid' },
   notes: String,

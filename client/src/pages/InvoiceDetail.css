@@ -2,10 +2,12 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 40px;
-  background: #ffffff !important; /* Force solid white */
+  background: #ffffff !important; 
   color: #0f172a !important;
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  border-top: 8px solid var(--primary);
   position: relative;
   z-index: 1;
 }
@@ -90,22 +92,29 @@
 }
 
 .invoice-type {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  font-weight: 800;
   letter-spacing: 1px;
   margin-bottom: 12px;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary) !important;
+  padding: 6px 16px;
+  border-radius: 6px;
+  display: inline-block;
 }
 
 .meta-row {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
 }
 
 .meta-label {
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .status-tag {
@@ -143,11 +152,15 @@
 }
 
 .section-title {
-  font-size: 0.9rem;
+  font-size: 1rem;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--primary) !important;
+  font-weight: 800;
   letter-spacing: 1px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+  padding-bottom: 4px;
+  display: inline-block;
 }
 
 .customer-name {
@@ -163,21 +176,23 @@
 
 .invoice-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-bottom: 40px;
-  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
 }
 
 .invoice-table th {
-  background: #f1f5f9;
+  background: var(--primary);
   padding: 14px 12px;
   text-align: left;
-  border: 1px solid #e2e8f0;
-  border-bottom: 2px solid #94a3b8;
   font-size: 0.9rem;
-  font-weight: 800;
-  color: #0f172a !important;
+  font-weight: 700;
+  color: #ffffff !important;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .invoice-table td {
@@ -233,10 +248,17 @@
 .grand-total {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 2px solid #e2e8f0;
-  font-size: 1.2rem;
+  border-top: 2px dashed #94a3b8;
+  font-size: 1.25rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--primary) !important;
+  background: rgba(99, 102, 241, 0.05);
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.grand-total span {
+  color: var(--primary) !important;
 }
 
 .invoice-footer {
@@ -268,7 +290,18 @@
   .app-layout { display: block !important; }
   .sidebar { display: none !important; }
   .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; }
-  .invoice-container { max-width: 100% !important; padding: 0 !important; }
+  .invoice-container { 
+    max-width: 100% !important; 
+    padding: 30px !important; 
+    box-shadow: none !important;
+    border: 2px solid #e2e8f0 !important;
+    border-top: 8px solid var(--primary) !important;
+  }
+  /* Webkit print color overrides for background colors */
+  .invoice-table th, .invoice-type, .grand-total, .dispatch-info, .status-tag {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
 
 .bank-details-info {

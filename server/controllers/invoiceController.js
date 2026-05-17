@@ -16,10 +16,15 @@ exports.createInvoice = async (req, res) => {
     // Calculate totals
     let subTotal = 0;
     let totalGst = 0;
+    let totalProfit = 0;
 
     const processedItems = items.map(item => {
       const amount = item.quantity * item.rate;
+      const purchaseP = Number(item.purchasePrice) || 0;
+      const itemProfit = (item.rate - purchaseP) * item.quantity;
+      
       subTotal += amount;
+      totalProfit += itemProfit;
       
       let itemGst = 0;
       let cgst = 0, sgst = 0, igst = 0;
@@ -38,6 +43,8 @@ exports.createInvoice = async (req, res) => {
 
       return {
         ...item,
+        purchasePrice: purchaseP,
+        profit: itemProfit,
         amount,
         cgst,
         sgst,
@@ -46,6 +53,9 @@ exports.createInvoice = async (req, res) => {
       };
     });
 
+    // We can also subtract commission from the overall profit if it applies to the invoice
+    // totalProfit -= (Number(commission) || 0); // Deciding to keep Gross Profit on items vs Net Profit. Let's just track item profit for now.
+    
     const grandTotal = subTotal + totalGst + (Number(transportCharges) || 0) + (Number(commission) || 0);
 
     const invoice = await Invoice.create({
@@ -54,7 +64,8 @@ exports.createInvoice = async (req, res) => {
       items: processedItems,
       subTotal,
       totalGst,
-      grandTotal
+      grandTotal,
+      totalProfit
     });
 
     // Increment company invoice number
@@ -106,6 +117,7 @@ exports.getReports = async (req, res) => {
       // P&L Data
       totalPurchases: purchases.reduce((sum, p) => sum + p.totalAmount, 0),
       purchaseGst: purchases.reduce((sum, p) => sum + (p.totalGst || 0), 0),
+      totalProfit: invoices.reduce((sum, inv) => sum + (inv.totalProfit || 0), 0),
       
       // Customer Commission breakdown
       customerCommissionList: Object.entries(invoices.reduce((acc, inv) => {

@@ -94,6 +94,7 @@ export default function Reports() {
       inv.totalGst || 0,
       inv.transportCharges || 0,
       inv.commission || 0,
+      inv.totalProfit || 0,
       inv.grandTotal,
       inv.status
     ]);
@@ -392,6 +393,7 @@ export default function Reports() {
                       <th>GST</th>
                       <th>Transport</th>
                       <th>Commission</th>
+                      <th>Est. Profit</th>
                       <th>Grand Total</th>
                       <th>Status</th>
                     </tr>
@@ -421,6 +423,9 @@ export default function Reports() {
                               </button>
                             )}
                           </div>
+                        </td>
+                        <td style={{ color: '#10b981', fontWeight: 'bold' }}>
+                          ₹{(inv.totalProfit || 0).toLocaleString('en-IN')}
                         </td>
                         <td className="grand-total">₹{inv.grandTotal?.toLocaleString('en-IN')}</td>
                         <td>
