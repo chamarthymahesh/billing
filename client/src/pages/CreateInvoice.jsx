@@ -367,13 +367,13 @@ export default function CreateInvoice() {
                         </td>
                       )}
                       <td>
-                        <input type="number" className="input-field item-input sm" min="1"
+                        <input type="number" step="any" className="input-field item-input sm" min="1"
                           value={item.quantity}
                           onChange={e => handleItem(idx, 'quantity', e.target.value)} />
                       </td>
                       <td>
                         <div className="rate-input-wrap">
-                          <input type="number" className="input-field item-input sm" min="0"
+                          <input type="number" step="any" className="input-field item-input sm" min="0"
                             value={item.rate}
                             onChange={e => handleItem(idx, 'rate', e.target.value)} />
                           {item.purchasePrice > 0 && (
@@ -420,17 +420,17 @@ export default function CreateInvoice() {
             <h2 className="section-title">Additional Charges</h2>
             <div className="form-group">
               <label>Transport Charges (₹)</label>
-              <input type="number" className="input-field" min="0" value={form.transportCharges}
+              <input type="number" step="any" className="input-field" min="0" value={form.transportCharges}
                 onChange={e => setForm(f => ({ ...f, transportCharges: e.target.value }))} />
             </div>
             <div className="form-group">
               <label>Commission (₹)</label>
-              <input type="number" className="input-field" min="0" value={form.commission}
+              <input type="number" step="any" className="input-field" min="0" value={form.commission}
                 onChange={e => setForm(f => ({ ...f, commission: e.target.value }))} />
             </div>
             <div className="form-group">
               <label>Adjustment (₹) — round-off, discount etc.</label>
-              <input type="number" className="input-field" value={form.adjustment}
+              <input type="number" step="any" className="input-field" value={form.adjustment}
                 onChange={e => setForm(f => ({ ...f, adjustment: e.target.value }))} />
             </div>
             <div className="form-group">
