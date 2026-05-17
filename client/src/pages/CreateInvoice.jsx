@@ -90,6 +90,21 @@ export default function CreateInvoice() {
     setForm(f => ({ ...f, items }));
   };
 
+  const handleTotalChange = (idx, val) => {
+    const items = [...form.items];
+    const item = items[idx];
+    const newTotal = Number(val) || 0;
+    const qty = Number(item.quantity) || 1;
+    const gstMultiplier = form.isGst ? (1 + Number(item.gstRate) / 100) : 1;
+    
+    // Calculate new rate (Total / (Qty * (1 + GST%)))
+    const newRate = newTotal / (qty * gstMultiplier);
+    
+    // Save rate with high precision to ensure total recalculates accurately
+    items[idx] = { ...item, rate: parseFloat(newRate.toFixed(4)) };
+    setForm(f => ({ ...f, items }));
+  };
+
   const addItem = () => setForm(f => ({ ...f, items: [...f.items, { ...EMPTY_ITEM }] }));
   const removeItem = (idx) => setForm(f => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
 
@@ -348,7 +363,16 @@ export default function CreateInvoice() {
                       )}
                       <td className="calc-cell">₹{amount.toFixed(2)}</td>
                       {form.isGst && <td className="calc-cell gst-cell">₹{gst.toFixed(2)}</td>}
-                      <td className="calc-cell total-cell">₹{total.toFixed(2)}</td>
+                      <td className="calc-cell total-cell">
+                        <input 
+                          type="number" 
+                          step="any" 
+                          className="input-field item-input sm highlight-input"
+                          style={{ width: '80px', padding: '4px' }}
+                          value={total ? Number(total.toFixed(2)) : ''}
+                          onChange={e => handleTotalChange(idx, e.target.value)}
+                        />
+                      </td>
                       <td>
                         {form.items.length > 1 && (
                           <button type="button" className="remove-btn" onClick={() => removeItem(idx)}>✕</button>
