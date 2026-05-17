@@ -23,9 +23,32 @@ export default function GlobalStock() {
     fetchGlobalStock();
   }, []);
 
-  const filteredStocks = stocks.filter(s => 
+  const groupedStocks = stocks.reduce((acc, curr) => {
+    const key = curr.name?.toLowerCase().trim();
+    if (!key) return acc;
+    if (!acc[key]) {
+      acc[key] = {
+        _id: curr._id,
+        name: curr.name,
+        sku: curr.sku,
+        stock: curr.stock || 0,
+        companies: new Set([curr.companyId?.name])
+      };
+    } else {
+      acc[key].stock += (curr.stock || 0);
+      acc[key].companies.add(curr.companyId?.name);
+    }
+    return acc;
+  }, {});
+
+  const aggregatedStocks = Object.values(groupedStocks).map(s => ({
+    ...s,
+    companyNames: Array.from(s.companies).filter(Boolean).join(', ')
+  }));
+
+  const filteredStocks = aggregatedStocks.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.companyId?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.companyNames.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.sku && s.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -70,7 +93,9 @@ export default function GlobalStock() {
               ) : (
                 filteredStocks.map(s => (
                   <tr key={s._id}>
-                    <td className="company-name-cell">{s.companyId?.name}</td>
+                    <td className="company-name-cell" style={{ maxWidth: '200px', whiteSpace: 'normal' }}>
+                      {s.companyNames}
+                    </td>
                     <td>{s.name}</td>
                     <td>{s.sku || '-'}</td>
                     <td className="stock-val">{s.stock}</td>
