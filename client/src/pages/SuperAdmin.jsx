@@ -134,11 +134,18 @@ export default function SuperAdmin() {
                     <label>GSTIN</label>
                     <input className="input-field" placeholder="Optional" value={form.gstin} onChange={e => setForm(f=>({ ...f, gstin:e.target.value }))} />
                   </div>
+                  <div className="form-group">
+                    <label>Phone *</label>
+                    <input className="input-field" required value={form.phone || ''} onChange={e => setForm(f=>({ ...f, phone:e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label>Company Email *</label>
+                    <input type="email" className="input-field" required value={form.email || ''} onChange={e => setForm(f=>({ ...f, email:e.target.value }))} />
+                  </div>
                   <div className="form-group full-width">
                     <label>Address *</label>
                     <input className="input-field" required value={form.address} onChange={e => setForm(f=>({ ...f, address:e.target.value }))} />
                   </div>
-                  
                   {!editingId && (
                     <>
                       <div className="form-divider full-width">Admin Account Details</div>

@@ -57,3 +57,18 @@ exports.updateCompany = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.deleteCompany = async (req, res) => {
+  try {
+    const company = await Company.findByIdAndDelete(req.params.id);
+    if (!company) return res.status(404).json({ message: 'Company not found' });
+    
+    // Delete associated users
+    await User.deleteMany({ companyId: req.params.id });
+    
+    res.json({ message: 'Company deleted successfully' });
+  } catch (error) {
+    console.error('DELETE_COMPANY_ERROR:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
