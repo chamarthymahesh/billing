@@ -40,6 +40,9 @@ export default function Products() {
 
   useEffect(() => { fetchProducts(); }, []);
 
+  const uniqueBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
+  const uniqueCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+
   const openAdd = () => { setForm(EMPTY); setEditing(null); setShowForm(true); };
   const openEdit = (p) => { setForm(p); setEditing(p._id); setShowForm(true); };
 
@@ -70,11 +73,22 @@ export default function Products() {
   };
 
   const handleNameChange = (val) => {
-    setForm(f => {
-      const next = { ...f, name: val };
-      if (!editing && !f.sku) next.sku = generateSKU(val, f.category);
-      return next;
-    });
+    const existingProduct = products.find(p => p.name.toLowerCase() === val.toLowerCase());
+    if (existingProduct && !editing) {
+      // Auto-fetch existing product details
+      setForm(existingProduct);
+      setEditing(existingProduct._id);
+    } else {
+      setForm(f => {
+        const next = { ...f, name: val };
+        if (!editing && !f.sku) next.sku = generateSKU(val, f.category);
+        return next;
+      });
+      // If they changed the name so it no longer matches the editing product, switch back to Add mode
+      if (editing && existingProduct?._id !== editing) {
+        setEditing(null);
+      }
+    }
   };
 
   const handleCategoryChange = (val) => {
@@ -111,13 +125,19 @@ export default function Products() {
               <div className="form-grid-2">
                 <div className="form-group">
                   <label>Product Name *</label>
-                  <input className="input-field" required value={form.name}
+                  <input className="input-field" required value={form.name} list="product-names-list"
                     onChange={e => handleNameChange(e.target.value)} />
+                  <datalist id="product-names-list">
+                    {products.map(p => <option key={p._id} value={p.name} />)}
+                  </datalist>
                 </div>
                 <div className="form-group">
                   <label>Brand</label>
-                  <input className="input-field" placeholder="e.g. Samsung, Nike" value={form.brand}
+                  <input className="input-field" placeholder="e.g. Samsung, Nike" value={form.brand} list="brands-list"
                     onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+                  <datalist id="brands-list">
+                    {uniqueBrands.map(b => <option key={b} value={b} />)}
+                  </datalist>
                 </div>
                 <div className="form-group">
                   <label>Product Type</label>
@@ -129,8 +149,11 @@ export default function Products() {
                 </div>
                 <div className="form-group">
                   <label>Category</label>
-                  <input className="input-field" placeholder="e.g. Electronics, Footwear" value={form.category}
+                  <input className="input-field" placeholder="e.g. Electronics, Footwear" value={form.category} list="categories-list"
                     onChange={e => handleCategoryChange(e.target.value)} />
+                  <datalist id="categories-list">
+                    {uniqueCategories.map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
                 <div className="form-group">
                   <label>SKU / Item Code</label>
