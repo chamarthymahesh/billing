@@ -11,6 +11,10 @@ export default function Purchases() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [viewBillNo, setViewBillNo] = useState(null);
+  const [editForm, setEditForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     supplierName: '',
@@ -45,6 +49,24 @@ export default function Purchases() {
     fetchPurchases();
     fetchProducts();
   }, []);
+
+  const supplierSuggestions = [];
+  const seen = new Set();
+  purchases.forEach(p => {
+    if (p.supplierName && !seen.has(p.supplierName.toLowerCase())) {
+      seen.add(p.supplierName.toLowerCase());
+      supplierSuggestions.push({ name: p.supplierName, gstin: p.supplierGstin });
+    }
+  });
+
+  const handleSupplierName = (val) => {
+    let gstin = form.supplierGstin;
+    const match = supplierSuggestions.find(s => s.name.toLowerCase() === val.toLowerCase());
+    if (match && match.gstin) {
+      gstin = match.gstin;
+    }
+    setForm({ ...form, supplierName: val, supplierGstin: gstin });
+  };
 
   const handleItemChange = (idx, field, val) => {
     const newItems = [...form.items];
@@ -122,6 +144,42 @@ export default function Purchases() {
     }
   };
 
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        ...editForm,
+        subTotal: editForm.quantity * editForm.rate,
+      };
+      if (editForm.isGst) {
+        payload.totalGst = (payload.subTotal * editForm.gstRate) / 100;
+        payload.totalAmount = payload.subTotal + payload.totalGst;
+      } else {
+        payload.totalGst = 0;
+        payload.totalAmount = payload.subTotal;
+      }
+      
+      await API.put(`/purchases/${editForm._id}`, payload);
+      setShowEditModal(false);
+      fetchPurchases();
+    } catch (err) {
+      alert('Error updating purchase line');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openView = (billNo) => {
+    setViewBillNo(billNo);
+    setShowViewModal(true);
+  };
+
+  const openEdit = (p) => {
+    setEditForm(p);
+    setShowEditModal(true);
+  };
+
   const totalPurchaseValue = purchases.reduce((sum, p) => sum + p.totalAmount, 0);
 
   return (
@@ -172,9 +230,15 @@ export default function Purchases() {
                     <input 
                       className="input-field highlight-input" 
                       required 
+                      list="supplier-list"
                       value={form.supplierName} 
-                      onChange={e => setForm({...form, supplierName: e.target.value})} 
+                      onChange={e => handleSupplierName(e.target.value)} 
                     />
+                    <datalist id="supplier-list">
+                      {supplierSuggestions.map((s, i) => (
+                        <option key={i} value={s.name}>{s.gstin || 'No GSTIN'}</option>
+                      ))}
+                    </datalist>
                   </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
@@ -306,6 +370,80 @@ export default function Purchases() {
             </motion.div>
           </div>
         )}
+
+        {showViewModal && viewBillNo && (
+          <div className="modal-overlay">
+            <motion.div className="modal glass-card" style={{ maxWidth: '800px', width: '90%' }}>
+              <div className="modal-header">
+                <h2>Bill Details: {viewBillNo}</h2>
+                <button className="close-btn" onClick={() => setShowViewModal(false)}>✕</button>
+              </div>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Rate</th>
+                      <th>GST</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {purchases.filter(p => p.billNumber === viewBillNo).map(p => (
+                      <tr key={p._id}>
+                        <td>{p.productId?.name}</td>
+                        <td>{p.quantity}</td>
+                        <td>₹{p.rate}</td>
+                        <td>₹{p.totalGst.toFixed(2)}</td>
+                        <td>₹{p.totalAmount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {showEditModal && editForm && (
+          <div className="modal-overlay">
+            <motion.div className="modal glass-card">
+              <div className="modal-header">
+                <h2>Edit Purchase Line</h2>
+                <button className="close-btn" onClick={() => setShowEditModal(false)}>✕</button>
+              </div>
+              <form onSubmit={handleEditSave} className="modal-form">
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label>Bill Number *</label>
+                    <input className="input-field" required value={editForm.billNumber} onChange={e => setEditForm({...editForm, billNumber: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Purchase Date *</label>
+                    <input type="date" className="input-field" required value={editForm.purchaseDate.split('T')[0]} onChange={e => setEditForm({...editForm, purchaseDate: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Supplier Name *</label>
+                    <input className="input-field" required value={editForm.supplierName} onChange={e => setEditForm({...editForm, supplierName: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Quantity *</label>
+                    <input type="number" step="any" className="input-field" required value={editForm.quantity} onChange={e => setEditForm({...editForm, quantity: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Rate *</label>
+                    <input type="number" step="any" className="input-field" required value={editForm.rate} onChange={e => setEditForm({...editForm, rate: e.target.value})} />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Update'}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
       <div className="glass-card">
@@ -351,7 +489,11 @@ export default function Purchases() {
                       </span>
                     </td>
                     <td>
-                      <button className="action-btn-icon del" onClick={() => handleDelete(p._id)} title="Delete Purchase">🗑️</button>
+                      <div className="action-btns">
+                        <button className="action-btn-icon view" onClick={() => openView(p.billNumber)} title="View Full Bill">👁️</button>
+                        <button className="action-btn-icon edit" onClick={() => openEdit(p)} title="Edit Line Item">✏️</button>
+                        <button className="action-btn-icon del" onClick={() => handleDelete(p._id)} title="Delete Purchase">🗑️</button>
+                      </div>
                     </td>
                   </tr>
                 ))
