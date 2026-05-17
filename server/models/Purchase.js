@@ -16,7 +16,8 @@ const purchaseSchema = new mongoose.Schema({
   totalGst: { type: Number, default: 0 },
   subTotal: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
-  isGst: { type: Boolean, default: false }
+  isGst: { type: Boolean, default: false },
+  paymentStatus: { type: String, enum: ['Paid', 'Pending'], default: 'Pending' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Purchase', purchaseSchema);

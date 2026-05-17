@@ -4,21 +4,21 @@ import Layout from '../components/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Purchases.css';
 
+const EMPTY_ITEM = { productId: '', quantity: 1, rate: 0, gstRate: 18, isGst: true };
+
 export default function Purchases() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    productId: '',
     supplierName: '',
     supplierGstin: '',
     billNumber: '',
     purchaseDate: new Date().toISOString().split('T')[0],
-    quantity: 0,
-    rate: 0,
-    gstRate: 18,
-    isGst: true
+    paymentStatus: 'Pending',
+    items: [{ ...EMPTY_ITEM }]
   });
 
   const fetchPurchases = async () => {
@@ -46,26 +46,79 @@ export default function Purchases() {
     fetchProducts();
   }, []);
 
+  const handleItemChange = (idx, field, val) => {
+    const newItems = [...form.items];
+    newItems[idx][field] = val;
+    setForm({ ...form, items: newItems });
+  };
+
+  const addItem = () => {
+    setForm({ ...form, items: [...form.items, { ...EMPTY_ITEM }] });
+  };
+
+  const removeItem = (idx) => {
+    const newItems = form.items.filter((_, i) => i !== idx);
+    setForm({ ...form, items: newItems });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
-      await API.post('/purchases', form);
+      const promises = form.items.map(item => {
+        if (!item.productId) throw new Error("Please select a product for all items");
+        const payload = {
+          supplierName: form.supplierName,
+          supplierGstin: form.supplierGstin,
+          billNumber: form.billNumber,
+          purchaseDate: form.purchaseDate,
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          rate: Number(item.rate),
+          gstRate: Number(item.gstRate),
+          isGst: item.isGst,
+          paymentStatus: form.paymentStatus
+        };
+        return API.post('/purchases', payload);
+      });
+      
+      await Promise.all(promises);
+      
       setShowForm(false);
       fetchPurchases();
       // Reset form
       setForm({
-        productId: '',
         supplierName: '',
         supplierGstin: '',
         billNumber: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-        quantity: 0,
-        rate: 0,
-        gstRate: 18,
-        isGst: true
+        paymentStatus: 'Pending',
+        items: [{ ...EMPTY_ITEM }]
       });
     } catch (err) {
-      alert('Error saving purchase');
+      alert(err.message || 'Error saving purchase');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this purchase? This will reduce the product stock.')) return;
+    try {
+      await API.delete(`/purchases/${id}`);
+      fetchPurchases();
+    } catch (err) {
+      alert('Error deleting purchase');
+    }
+  };
+
+  const togglePaymentStatus = async (purchase) => {
+    const newStatus = purchase.paymentStatus === 'Paid' ? 'Pending' : 'Paid';
+    try {
+      await API.put(`/purchases/${purchase._id}`, { paymentStatus: newStatus });
+      fetchPurchases();
+    } catch (err) {
+      alert('Error updating payment status');
     }
   };
 
@@ -106,29 +159,18 @@ export default function Purchases() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
+              style={{ maxWidth: '800px', width: '90%' }} // Made wider for items table
             >
               <div className="modal-header">
                 <h2>Record New Purchase</h2>
                 <button className="close-btn" onClick={() => setShowForm(false)}>✕</button>
               </div>
               <form onSubmit={handleSubmit} className="modal-form">
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label>Select Product *</label>
-                    <select 
-                      className="input-field" 
-                      required 
-                      value={form.productId} 
-                      onChange={e => setForm({...form, productId: e.target.value})}
-                    >
-                      <option value="">-- Choose Product --</option>
-                      {products.map(p => <option key={p._id} value={p._id}>{p.name} ({p.sku})</option>)}
-                    </select>
-                  </div>
+                <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                   <div className="form-group">
                     <label>Supplier Name *</label>
                     <input 
-                      className="input-field" 
+                      className="input-field highlight-input" 
                       required 
                       value={form.supplierName} 
                       onChange={e => setForm({...form, supplierName: e.target.value})} 
@@ -145,58 +187,120 @@ export default function Purchases() {
                   <div className="form-group">
                     <label>Bill Number *</label>
                     <input 
-                      className="input-field" 
+                      className="input-field highlight-input" 
                       required 
                       value={form.billNumber} 
                       onChange={e => setForm({...form, billNumber: e.target.value})} 
                     />
                   </div>
                   <div className="form-group">
-                    <label>Quantity *</label>
+                    <label>Purchase Date *</label>
                     <input 
-                      type="number" 
+                      type="date"
                       className="input-field" 
                       required 
-                      value={form.quantity} 
-                      onChange={e => setForm({...form, quantity: e.target.value})} 
+                      value={form.purchaseDate} 
+                      onChange={e => setForm({...form, purchaseDate: e.target.value})} 
                     />
                   </div>
                   <div className="form-group">
-                    <label>Rate (Base Price) *</label>
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      required 
-                      value={form.rate} 
-                      onChange={e => setForm({...form, rate: e.target.value})} 
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>GST Rate (%)</label>
+                    <label>Payment Status</label>
                     <select 
-                      className="input-field" 
-                      value={form.gstRate} 
-                      onChange={e => setForm({...form, gstRate: e.target.value})}
+                      className="input-field"
+                      value={form.paymentStatus}
+                      onChange={e => setForm({...form, paymentStatus: e.target.value})}
                     >
-                      <option value="0">0%</option>
-                      <option value="5">5%</option>
-                      <option value="12">12%</option>
-                      <option value="18">18%</option>
-                      <option value="28">28%</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Paid">Paid</option>
                     </select>
                   </div>
-                  <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.isGst} 
-                      onChange={e => setForm({...form, isGst: e.target.checked})} 
-                    />
-                    <label>Include GST</label>
-                  </div>
                 </div>
-                <div className="modal-footer">
+
+                <div className="items-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0 }}>Products in this Bill</h3>
+                  <button type="button" className="btn-primary btn-sm" onClick={addItem}>+ Add Item</button>
+                </div>
+                
+                <div className="table-wrap" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  <table className="items-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Rate (₹)</th>
+                        <th>GST %</th>
+                        <th>+ GST?</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {form.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>
+                            <select 
+                              className="input-field item-input" 
+                              required 
+                              value={item.productId} 
+                              onChange={e => handleItemChange(idx, 'productId', e.target.value)}
+                            >
+                              <option value="">-- Choose Product --</option>
+                              {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <input 
+                              type="number" step="any"
+                              className="input-field item-input sm" 
+                              required 
+                              value={item.quantity} 
+                              onChange={e => handleItemChange(idx, 'quantity', e.target.value)} 
+                            />
+                          </td>
+                          <td>
+                            <input 
+                              type="number" step="any"
+                              className="input-field item-input sm" 
+                              required 
+                              value={item.rate} 
+                              onChange={e => handleItemChange(idx, 'rate', e.target.value)} 
+                            />
+                          </td>
+                          <td>
+                            <select 
+                              className="input-field item-input sm" 
+                              value={item.gstRate} 
+                              onChange={e => handleItemChange(idx, 'gstRate', e.target.value)}
+                            >
+                              <option value="0">0%</option>
+                              <option value="5">5%</option>
+                              <option value="12">12%</option>
+                              <option value="18">18%</option>
+                              <option value="28">28%</option>
+                            </select>
+                          </td>
+                          <td>
+                            <input 
+                              type="checkbox" 
+                              checked={item.isGst} 
+                              onChange={e => handleItemChange(idx, 'isGst', e.target.checked)} 
+                            />
+                          </td>
+                          <td>
+                            {form.items.length > 1 && (
+                              <button type="button" className="remove-btn" onClick={() => removeItem(idx)}>✕</button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="modal-footer" style={{ marginTop: '20px' }}>
                   <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-                  <button type="submit" className="btn-primary">Record Purchase</button>
+                  <button type="submit" className="btn-primary" disabled={saving}>
+                    {saving ? 'Saving...' : 'Record Purchase'}
+                  </button>
                 </div>
               </form>
             </motion.div>
@@ -216,8 +320,9 @@ export default function Purchases() {
                 <th>Product</th>
                 <th>Qty</th>
                 <th>Rate</th>
-                <th>GST</th>
                 <th>Total</th>
+                <th>Payment Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -234,8 +339,20 @@ export default function Purchases() {
                     <td>{p.productId?.name}</td>
                     <td>{p.quantity}</td>
                     <td>₹{p.rate}</td>
-                    <td>₹{p.totalGst.toFixed(2)}</td>
                     <td>₹{p.totalAmount.toFixed(2)}</td>
+                    <td>
+                      <span 
+                        className={`badge ${p.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}`} 
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => togglePaymentStatus(p)}
+                        title="Click to toggle status"
+                      >
+                        {p.paymentStatus || 'Pending'}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="action-btn-icon del" onClick={() => handleDelete(p._id)} title="Delete Purchase">🗑️</button>
+                    </td>
                   </tr>
                 ))
               )}
