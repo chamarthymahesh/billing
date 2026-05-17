@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import API from '../api/axiosInstance';
 import Layout from '../components/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,7 +14,6 @@ export default function Purchases() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [viewBillNo, setViewBillNo] = useState(null);
-  const [editForm, setEditForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     supplierName: '',
@@ -24,6 +23,7 @@ export default function Purchases() {
     paymentStatus: 'Pending',
     items: [{ ...EMPTY_ITEM }]
   });
+  const [editForm, setEditForm] = useState(null);
 
   const fetchPurchases = async () => {
     try {
@@ -50,37 +50,59 @@ export default function Purchases() {
     fetchProducts();
   }, []);
 
-  const supplierSuggestions = [];
-  const seen = new Set();
-  purchases.forEach(p => {
-    if (p.supplierName && !seen.has(p.supplierName.toLowerCase())) {
-      seen.add(p.supplierName.toLowerCase());
-      supplierSuggestions.push({ name: p.supplierName, gstin: p.supplierGstin });
-    }
-  });
+  const supplierSuggestions = useMemo(() => {
+    const suggestions = [];
+    const seen = new Set();
+    purchases.forEach(p => {
+      if (p.supplierName && !seen.has(p.supplierName.toLowerCase())) {
+        seen.add(p.supplierName.toLowerCase());
+        suggestions.push({ name: p.supplierName, gstin: p.supplierGstin });
+      }
+    });
+    return suggestions;
+  }, [purchases]);
 
-  const handleSupplierName = (val) => {
-    let gstin = form.supplierGstin;
+  const handleSupplierName = (val, isEdit = false) => {
+    let gstin = isEdit ? editForm.supplierGstin : form.supplierGstin;
     const match = supplierSuggestions.find(s => s.name.toLowerCase() === val.toLowerCase());
     if (match && match.gstin) {
       gstin = match.gstin;
     }
-    setForm({ ...form, supplierName: val, supplierGstin: gstin });
+    if (isEdit) {
+      setEditForm({ ...editForm, supplierName: val, supplierGstin: gstin });
+    } else {
+      setForm({ ...form, supplierName: val, supplierGstin: gstin });
+    }
   };
 
-  const handleItemChange = (idx, field, val) => {
-    const newItems = [...form.items];
-    newItems[idx][field] = val;
-    setForm({ ...form, items: newItems });
+  const handleItemChange = (idx, field, val, isEdit = false) => {
+    if (isEdit) {
+      const newItems = [...editForm.items];
+      newItems[idx][field] = val;
+      setEditForm({ ...editForm, items: newItems });
+    } else {
+      const newItems = [...form.items];
+      newItems[idx][field] = val;
+      setForm({ ...form, items: newItems });
+    }
   };
 
-  const addItem = () => {
-    setForm({ ...form, items: [...form.items, { ...EMPTY_ITEM }] });
+  const addItem = (isEdit = false) => {
+    if (isEdit) {
+      setEditForm({ ...editForm, items: [...editForm.items, { ...EMPTY_ITEM }] });
+    } else {
+      setForm({ ...form, items: [...form.items, { ...EMPTY_ITEM }] });
+    }
   };
 
-  const removeItem = (idx) => {
-    const newItems = form.items.filter((_, i) => i !== idx);
-    setForm({ ...form, items: newItems });
+  const removeItem = (idx, isEdit = false) => {
+    if (isEdit) {
+      const newItems = editForm.items.filter((_, i) => i !== idx);
+      setEditForm({ ...editForm, items: newItems });
+    } else {
+      const newItems = form.items.filter((_, i) => i !== idx);
+      setForm({ ...form, items: newItems });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -105,17 +127,12 @@ export default function Purchases() {
       });
       
       await Promise.all(promises);
-      
       setShowForm(false);
       fetchPurchases();
-      // Reset form
       setForm({
-        supplierName: '',
-        supplierGstin: '',
-        billNumber: '',
+        supplierName: '', supplierGstin: '', billNumber: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-        paymentStatus: 'Pending',
-        items: [{ ...EMPTY_ITEM }]
+        paymentStatus: 'Pending', items: [{ ...EMPTY_ITEM }]
       });
     } catch (err) {
       alert(err.message || 'Error saving purchase');
@@ -124,47 +141,27 @@ export default function Purchases() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this purchase? This will reduce the product stock.')) return;
-    try {
-      await API.delete(`/purchases/${id}`);
-      fetchPurchases();
-    } catch (err) {
-      alert('Error deleting purchase');
-    }
-  };
-
-  const togglePaymentStatus = async (purchase) => {
-    const newStatus = purchase.paymentStatus === 'Paid' ? 'Pending' : 'Paid';
-    try {
-      await API.put(`/purchases/${purchase._id}`, { paymentStatus: newStatus });
-      fetchPurchases();
-    } catch (err) {
-      alert('Error updating payment status');
-    }
-  };
-
   const handleEditSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = {
-        ...editForm,
-        subTotal: editForm.quantity * editForm.rate,
-      };
-      if (editForm.isGst) {
-        payload.totalGst = (payload.subTotal * editForm.gstRate) / 100;
-        payload.totalAmount = payload.subTotal + payload.totalGst;
-      } else {
-        payload.totalGst = 0;
-        payload.totalAmount = payload.subTotal;
+      for (const item of editForm.items) {
+        if (!item.productId) throw new Error("Please select a product for all items");
       }
-      
-      await API.put(`/purchases/${editForm._id}`, payload);
+      const payload = {
+        supplierName: editForm.supplierName,
+        supplierGstin: editForm.supplierGstin,
+        billNumber: editForm.billNumber,
+        purchaseDate: editForm.purchaseDate,
+        paymentStatus: editForm.paymentStatus,
+        items: editForm.items
+      };
+      // Call the new group PUT route
+      await API.put(`/purchases/bill/${encodeURIComponent(editForm.oldBillNumber)}`, payload);
       setShowEditModal(false);
       fetchPurchases();
     } catch (err) {
-      alert('Error updating purchase line');
+      alert(err.message || 'Error updating bill');
     } finally {
       setSaving(false);
     }
@@ -175,12 +172,76 @@ export default function Purchases() {
     setShowViewModal(true);
   };
 
-  const openEdit = (p) => {
-    setEditForm(p);
+  const openEdit = (billGroup) => {
+    setEditForm({
+      oldBillNumber: billGroup.billNumber,
+      supplierName: billGroup.supplierName,
+      supplierGstin: billGroup.items[0]?.supplierGstin || '',
+      billNumber: billGroup.billNumber,
+      purchaseDate: new Date(billGroup.purchaseDate).toISOString().split('T')[0],
+      paymentStatus: billGroup.paymentStatus,
+      items: billGroup.items.map(i => ({
+        productId: i.productId?._id || '',
+        quantity: i.quantity,
+        rate: i.rate,
+        gstRate: i.gstRate || 0,
+        isGst: i.isGst || false
+      }))
+    });
     setShowEditModal(true);
   };
 
-  const totalPurchaseValue = purchases.reduce((sum, p) => sum + p.totalAmount, 0);
+  const handleDeleteBill = async (billNumber) => {
+    if (!window.confirm('Are you sure you want to delete this entire bill? This will reduce the product stock for all items.')) return;
+    try {
+      await API.delete(`/purchases/bill/${encodeURIComponent(billNumber)}`);
+      fetchPurchases();
+    } catch (err) {
+      alert('Error deleting bill');
+    }
+  };
+
+  const togglePaymentStatus = async (billGroup) => {
+    const newStatus = billGroup.paymentStatus === 'Paid' ? 'Pending' : 'Paid';
+    try {
+      // Just map through all items and update payment status to save time without recreating the bill
+      const promises = billGroup.items.map(item => 
+        API.put(`/purchases/${item._id}`, { paymentStatus: newStatus })
+      );
+      await Promise.all(promises);
+      fetchPurchases();
+    } catch (err) {
+      alert('Error updating payment status');
+    }
+  };
+
+  // Group purchases by billNumber
+  const groupedPurchases = useMemo(() => {
+    const groups = {};
+    purchases.forEach(p => {
+      if (!groups[p.billNumber]) {
+        groups[p.billNumber] = {
+          _id: p.billNumber, // Use billNumber as key
+          billNumber: p.billNumber,
+          supplierName: p.supplierName,
+          purchaseDate: p.purchaseDate,
+          paymentStatus: p.paymentStatus || 'Pending',
+          totalItems: 0,
+          totalAmount: 0,
+          totalGst: 0,
+          items: []
+        };
+      }
+      groups[p.billNumber].items.push(p);
+      groups[p.billNumber].totalItems += p.quantity;
+      groups[p.billNumber].totalAmount += p.totalAmount;
+      groups[p.billNumber].totalGst += p.totalGst;
+    });
+    // Convert to array and sort by date descending
+    return Object.values(groups).sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+  }, [purchases]);
+
+  const totalPurchaseValue = groupedPurchases.reduce((sum, g) => sum + g.totalAmount, 0);
 
   return (
     <Layout>
@@ -203,77 +264,45 @@ export default function Purchases() {
         <div className="glass-card stat-card-item" style={{ '--accent-color': '#6366f1' }}>
           <div className="stat-icon-wrap">📦</div>
           <div>
-            <div className="stat-val">{purchases.length}</div>
-            <div className="stat-lbl">Total Purchase Records</div>
+            <div className="stat-val">{groupedPurchases.length}</div>
+            <div className="stat-lbl">Total Purchase Bills</div>
           </div>
         </div>
       </div>
 
       <AnimatePresence>
+        {/* ADD FORM */}
         {showForm && (
           <div className="modal-overlay">
-            <motion.div 
-              className="modal glass-card"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              style={{ maxWidth: '800px', width: '90%' }} // Made wider for items table
-            >
+            <motion.div className="modal glass-card" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ maxWidth: '900px', width: '95%' }}>
               <div className="modal-header">
-                <h2>Record New Purchase</h2>
+                <h2>Record New Purchase Bill</h2>
                 <button className="close-btn" onClick={() => setShowForm(false)}>✕</button>
               </div>
               <form onSubmit={handleSubmit} className="modal-form">
                 <div className="form-grid-2" style={{ marginBottom: '20px' }}>
                   <div className="form-group">
                     <label>Supplier Name *</label>
-                    <input 
-                      className="input-field highlight-input" 
-                      required 
-                      list="supplier-list"
-                      value={form.supplierName} 
-                      onChange={e => handleSupplierName(e.target.value)} 
-                    />
+                    <input className="input-field highlight-input" required list="supplier-list" value={form.supplierName} onChange={e => handleSupplierName(e.target.value)} />
                     <datalist id="supplier-list">
-                      {supplierSuggestions.map((s, i) => (
-                        <option key={i} value={s.name}>{s.gstin || 'No GSTIN'}</option>
-                      ))}
+                      {supplierSuggestions.map((s, i) => <option key={i} value={s.name}>{s.gstin || 'No GSTIN'}</option>)}
                     </datalist>
                   </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
-                    <input 
-                      className="input-field" 
-                      value={form.supplierGstin} 
-                      onChange={e => setForm({...form, supplierGstin: e.target.value})} 
-                    />
+                    <input className="input-field" value={form.supplierGstin} onChange={e => setForm({...form, supplierGstin: e.target.value})} />
                   </div>
                   <div className="form-group">
                     <label>Bill Number *</label>
-                    <input 
-                      className="input-field highlight-input" 
-                      required 
-                      value={form.billNumber} 
-                      onChange={e => setForm({...form, billNumber: e.target.value})} 
-                    />
+                    <input className="input-field highlight-input" required value={form.billNumber} onChange={e => setForm({...form, billNumber: e.target.value})} />
                   </div>
                   <div className="form-group">
                     <label>Purchase Date *</label>
-                    <input 
-                      type="date"
-                      className="input-field" 
-                      required 
-                      value={form.purchaseDate} 
-                      onChange={e => setForm({...form, purchaseDate: e.target.value})} 
-                    />
+                    <input type="date" className="input-field" required value={form.purchaseDate} onChange={e => setForm({...form, purchaseDate: e.target.value})} />
                   </div>
                   <div className="form-group">
                     <label>Payment Status</label>
-                    <select 
-                      className="input-field"
-                      value={form.paymentStatus}
-                      onChange={e => setForm({...form, paymentStatus: e.target.value})}
-                    >
+                    <select className="input-field" value={form.paymentStatus} onChange={e => setForm({...form, paymentStatus: e.target.value})}>
                       <option value="Pending">Pending</option>
                       <option value="Paid">Paid</option>
                     </select>
@@ -282,59 +311,38 @@ export default function Purchases() {
 
                 <div className="items-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <h3 style={{ margin: 0 }}>Products in this Bill</h3>
-                  <button type="button" className="btn-primary btn-sm" onClick={addItem}>+ Add Item</button>
+                  <button type="button" className="btn-primary btn-sm" onClick={() => addItem()}>+ Add Item</button>
                 </div>
                 
                 <div className="table-wrap" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                   <table className="items-table">
                     <thead>
                       <tr>
-                        <th>Product</th>
-                        <th>Qty</th>
-                        <th>Rate (₹)</th>
-                        <th>GST %</th>
-                        <th>+ GST?</th>
-                        <th></th>
+                        <th style={{ width: '40%' }}>Product</th>
+                        <th style={{ width: '15%' }}>Qty</th>
+                        <th style={{ width: '15%' }}>Rate (₹)</th>
+                        <th style={{ width: '12%' }}>GST %</th>
+                        <th style={{ width: '10%' }}>+ GST?</th>
+                        <th style={{ width: '8%' }}></th>
                       </tr>
                     </thead>
                     <tbody>
                       {form.items.map((item, idx) => (
                         <tr key={idx}>
                           <td>
-                            <select 
-                              className="input-field item-input" 
-                              required 
-                              value={item.productId} 
-                              onChange={e => handleItemChange(idx, 'productId', e.target.value)}
-                            >
+                            <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value)}>
                               <option value="">-- Choose Product --</option>
                               {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
                             </select>
                           </td>
                           <td>
-                            <input 
-                              type="number" step="any"
-                              className="input-field item-input sm" 
-                              required 
-                              value={item.quantity} 
-                              onChange={e => handleItemChange(idx, 'quantity', e.target.value)} 
-                            />
+                            <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value)} />
                           </td>
                           <td>
-                            <input 
-                              type="number" step="any"
-                              className="input-field item-input sm" 
-                              required 
-                              value={item.rate} 
-                              onChange={e => handleItemChange(idx, 'rate', e.target.value)} 
-                            />
+                            <input type="number" step="any" className="input-field item-input sm" required value={item.rate} onChange={e => handleItemChange(idx, 'rate', e.target.value)} />
                           </td>
                           <td>
-                            <select 
-                              className="input-field item-input sm" 
-                              value={item.gstRate} 
-                              onChange={e => handleItemChange(idx, 'gstRate', e.target.value)}
-                            >
+                            <select className="input-field item-input sm" value={item.gstRate} onChange={e => handleItemChange(idx, 'gstRate', e.target.value)}>
                               <option value="0">0%</option>
                               <option value="5">5%</option>
                               <option value="12">12%</option>
@@ -343,16 +351,10 @@ export default function Purchases() {
                             </select>
                           </td>
                           <td>
-                            <input 
-                              type="checkbox" 
-                              checked={item.isGst} 
-                              onChange={e => handleItemChange(idx, 'isGst', e.target.checked)} 
-                            />
+                            <input type="checkbox" checked={item.isGst} onChange={e => handleItemChange(idx, 'isGst', e.target.checked)} />
                           </td>
                           <td>
-                            {form.items.length > 1 && (
-                              <button type="button" className="remove-btn" onClick={() => removeItem(idx)}>✕</button>
-                            )}
+                            {form.items.length > 1 && <button type="button" className="remove-btn" onClick={() => removeItem(idx)}>✕</button>}
                           </td>
                         </tr>
                       ))}
@@ -362,15 +364,114 @@ export default function Purchases() {
 
                 <div className="modal-footer" style={{ marginTop: '20px' }}>
                   <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={saving}>
-                    {saving ? 'Saving...' : 'Record Purchase'}
-                  </button>
+                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Record Purchase'}</button>
                 </div>
               </form>
             </motion.div>
           </div>
         )}
 
+        {/* EDIT FORM */}
+        {showEditModal && editForm && (
+          <div className="modal-overlay">
+            <motion.div className="modal glass-card" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ maxWidth: '900px', width: '95%' }}>
+              <div className="modal-header">
+                <h2>Edit Purchase Bill</h2>
+                <button className="close-btn" onClick={() => setShowEditModal(false)}>✕</button>
+              </div>
+              <form onSubmit={handleEditSave} className="modal-form">
+                <div className="form-grid-2" style={{ marginBottom: '20px' }}>
+                  <div className="form-group">
+                    <label>Supplier Name *</label>
+                    <input className="input-field highlight-input" required list="supplier-list-edit" value={editForm.supplierName} onChange={e => handleSupplierName(e.target.value, true)} />
+                    <datalist id="supplier-list-edit">
+                      {supplierSuggestions.map((s, i) => <option key={i} value={s.name}>{s.gstin || 'No GSTIN'}</option>)}
+                    </datalist>
+                  </div>
+                  <div className="form-group">
+                    <label>Supplier GSTIN</label>
+                    <input className="input-field" value={editForm.supplierGstin} onChange={e => setEditForm({...editForm, supplierGstin: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Bill Number *</label>
+                    <input className="input-field highlight-input" required value={editForm.billNumber} onChange={e => setEditForm({...editForm, billNumber: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Purchase Date *</label>
+                    <input type="date" className="input-field" required value={editForm.purchaseDate} onChange={e => setEditForm({...editForm, purchaseDate: e.target.value})} />
+                  </div>
+                  <div className="form-group">
+                    <label>Payment Status</label>
+                    <select className="input-field" value={editForm.paymentStatus} onChange={e => setEditForm({...editForm, paymentStatus: e.target.value})}>
+                      <option value="Pending">Pending</option>
+                      <option value="Paid">Paid</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="items-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0 }}>Products in this Bill</h3>
+                  <button type="button" className="btn-primary btn-sm" onClick={() => addItem(true)}>+ Add Item</button>
+                </div>
+                
+                <div className="table-wrap" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  <table className="items-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40%' }}>Product</th>
+                        <th style={{ width: '15%' }}>Qty</th>
+                        <th style={{ width: '15%' }}>Rate (₹)</th>
+                        <th style={{ width: '12%' }}>GST %</th>
+                        <th style={{ width: '10%' }}>+ GST?</th>
+                        <th style={{ width: '8%' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {editForm.items.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>
+                            <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value, true)}>
+                              <option value="">-- Choose Product --</option>
+                              {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value, true)} />
+                          </td>
+                          <td>
+                            <input type="number" step="any" className="input-field item-input sm" required value={item.rate} onChange={e => handleItemChange(idx, 'rate', e.target.value, true)} />
+                          </td>
+                          <td>
+                            <select className="input-field item-input sm" value={item.gstRate} onChange={e => handleItemChange(idx, 'gstRate', e.target.value, true)}>
+                              <option value="0">0%</option>
+                              <option value="5">5%</option>
+                              <option value="12">12%</option>
+                              <option value="18">18%</option>
+                              <option value="28">28%</option>
+                            </select>
+                          </td>
+                          <td>
+                            <input type="checkbox" checked={item.isGst} onChange={e => handleItemChange(idx, 'isGst', e.target.checked, true)} />
+                          </td>
+                          <td>
+                            {editForm.items.length > 1 && <button type="button" className="remove-btn" onClick={() => removeItem(idx, true)}>✕</button>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="modal-footer" style={{ marginTop: '20px' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* VIEW MODAL */}
         {showViewModal && viewBillNo && (
           <div className="modal-overlay">
             <motion.div className="modal glass-card" style={{ maxWidth: '800px', width: '90%' }}>
@@ -405,49 +506,10 @@ export default function Purchases() {
             </motion.div>
           </div>
         )}
-
-        {showEditModal && editForm && (
-          <div className="modal-overlay">
-            <motion.div className="modal glass-card">
-              <div className="modal-header">
-                <h2>Edit Purchase Line</h2>
-                <button className="close-btn" onClick={() => setShowEditModal(false)}>✕</button>
-              </div>
-              <form onSubmit={handleEditSave} className="modal-form">
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label>Bill Number *</label>
-                    <input className="input-field" required value={editForm.billNumber} onChange={e => setEditForm({...editForm, billNumber: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label>Purchase Date *</label>
-                    <input type="date" className="input-field" required value={editForm.purchaseDate.split('T')[0]} onChange={e => setEditForm({...editForm, purchaseDate: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label>Supplier Name *</label>
-                    <input className="input-field" required value={editForm.supplierName} onChange={e => setEditForm({...editForm, supplierName: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label>Quantity *</label>
-                    <input type="number" step="any" className="input-field" required value={editForm.quantity} onChange={e => setEditForm({...editForm, quantity: e.target.value})} />
-                  </div>
-                  <div className="form-group">
-                    <label>Rate *</label>
-                    <input type="number" step="any" className="input-field" required value={editForm.rate} onChange={e => setEditForm({...editForm, rate: e.target.value})} />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Update'}</button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
       </AnimatePresence>
 
       <div className="glass-card">
-        <h2 className="section-title">Purchase History</h2>
+        <h2 className="section-title">Purchase History (Grouped by Bill)</h2>
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -455,10 +517,9 @@ export default function Purchases() {
                 <th>Date</th>
                 <th>Bill No</th>
                 <th>Supplier</th>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Rate</th>
-                <th>Total</th>
+                <th>Total Items</th>
+                <th>GST Amt</th>
+                <th>Total Bill</th>
                 <th>Payment Status</th>
                 <th>Actions</th>
               </tr>
@@ -466,33 +527,32 @@ export default function Purchases() {
             <tbody>
               {loading ? (
                 <tr><td colSpan="8" className="loading-state">Loading purchases...</td></tr>
-              ) : purchases.length === 0 ? (
+              ) : groupedPurchases.length === 0 ? (
                 <tr><td colSpan="8" className="empty-row">No purchases recorded yet.</td></tr>
               ) : (
-                purchases.map(p => (
-                  <tr key={p._id}>
-                    <td>{new Date(p.purchaseDate).toLocaleDateString()}</td>
-                    <td>{p.billNumber}</td>
-                    <td>{p.supplierName}</td>
-                    <td>{p.productId?.name}</td>
-                    <td>{p.quantity}</td>
-                    <td>₹{p.rate}</td>
-                    <td>₹{p.totalAmount.toFixed(2)}</td>
+                groupedPurchases.map(g => (
+                  <tr key={g._id}>
+                    <td>{new Date(g.purchaseDate).toLocaleDateString()}</td>
+                    <td><div className="badge">{g.billNumber}</div></td>
+                    <td>{g.supplierName}</td>
+                    <td>{g.totalItems}</td>
+                    <td>₹{g.totalGst.toFixed(2)}</td>
+                    <td><strong style={{ color: '#10b981' }}>₹{g.totalAmount.toFixed(2)}</strong></td>
                     <td>
                       <span 
-                        className={`badge ${p.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}`} 
+                        className={`badge ${g.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}`} 
                         style={{ cursor: 'pointer' }}
-                        onClick={() => togglePaymentStatus(p)}
+                        onClick={() => togglePaymentStatus(g)}
                         title="Click to toggle status"
                       >
-                        {p.paymentStatus || 'Pending'}
+                        {g.paymentStatus}
                       </span>
                     </td>
                     <td>
                       <div className="action-btns">
-                        <button className="action-btn-icon view" onClick={() => openView(p.billNumber)} title="View Full Bill">👁️</button>
-                        <button className="action-btn-icon edit" onClick={() => openEdit(p)} title="Edit Line Item">✏️</button>
-                        <button className="action-btn-icon del" onClick={() => handleDelete(p._id)} title="Delete Purchase">🗑️</button>
+                        <button className="action-btn-icon view" onClick={() => openView(g.billNumber)} title="View Items">👁️</button>
+                        <button className="action-btn-icon edit" onClick={() => openEdit(g)} title="Edit Bill">✏️</button>
+                        <button className="action-btn-icon del" onClick={() => handleDeleteBill(g.billNumber)} title="Delete Bill">🗑️</button>
                       </div>
                     </td>
                   </tr>
