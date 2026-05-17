@@ -28,30 +28,6 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
   
-  // Admin Bypass
-  if (email.toLowerCase() === 'admin@billpro.com' && password === 'admin123') {
-    return res.json({
-      _id: 'dev_admin_id',
-      name: 'Super Admin (Dev)',
-      email: 'admin@billpro.com',
-      role: 'superadmin',
-      companyId: null,
-      token: jwt.sign({ id: 'dev_admin_id' }, process.env.JWT_SECRET, { expiresIn: '30d' }),
-    });
-  }
-
-  // Company Bypass (For Testing)
-  if (email.toLowerCase() === 'company@billpro.com' && password === 'company123') {
-    return res.json({
-      _id: 'dev_company_id',
-      name: 'Company Admin (Dev)',
-      email: 'company@billpro.com',
-      role: 'companyadmin',
-      companyId: '6a04a66def3d7c0b2820aaa7', // Demo Company ID
-      token: jwt.sign({ id: 'dev_company_id' }, process.env.JWT_SECRET, { expiresIn: '30d' }),
-    });
-  }
-
   try {
     const user = await User.findOne({ email });
     if (user && (await user.comparePassword(password))) {

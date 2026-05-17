@@ -12,11 +12,10 @@ exports.createCompany = async (req, res) => {
     
     // 2. Create the admin user for this company
     if (adminEmail && adminPassword) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await User.create({
         name: adminName || company.name + ' Admin',
         email: adminEmail,
-        password: hashedPassword,
+        password: adminPassword,
         role: 'companyadmin',
         companyId: company._id
       });
