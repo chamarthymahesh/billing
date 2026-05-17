@@ -15,6 +15,7 @@ export default function CreateInvoice() {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
+  const [isNewCustomer, setIsNewCustomer] = useState(true);
 
   const [form, setForm] = useState({
     isGst: true,
@@ -59,19 +60,34 @@ export default function CreateInvoice() {
     }).catch(() => {});
   }, [user.companyId]);
 
-  const handleCustomer = (field, val) => {
-    let nextCustomer = { ...form.customer, [field]: val };
-    
-    if (field === 'name') {
-      const match = customerSuggestions.find(c => c.name.toLowerCase() === val.toLowerCase());
+  const handleCustomerSelect = (val) => {
+    if (val === 'NEW') {
+      setIsNewCustomer(true);
+      setForm(f => ({
+        ...f,
+        customer: {
+          name: '', address: '', phone: '', gstin: '', state: '', placeOfSupply: '',
+          shippingAddress: '', sameAsBilling: true 
+        }
+      }));
+    } else {
+      setIsNewCustomer(false);
+      const match = customerSuggestions.find(c => c.name === val);
       if (match) {
-        nextCustomer = { 
-          ...match, 
-          placeOfSupply: match.placeOfSupply || match.state,
-          sameAsBilling: match.sameAsBilling ?? true 
-        };
+        setForm(f => ({
+          ...f,
+          customer: { 
+            ...match, 
+            placeOfSupply: match.placeOfSupply || match.state,
+            sameAsBilling: match.sameAsBilling ?? true 
+          }
+        }));
       }
     }
+  };
+
+  const handleCustomer = (field, val) => {
+    let nextCustomer = { ...form.customer, [field]: val };
 
     if (field === 'state') {
       nextCustomer.placeOfSupply = val;
@@ -206,19 +222,30 @@ export default function CreateInvoice() {
           <div className="form-grid-2">
             <div className="form-group">
               <label>Customer Name *</label>
-              <input 
-                className="input-field" 
-                placeholder="Type or select customer..." 
-                required
-                list="customer-list"
-                value={form.customer.name} 
-                onChange={e => handleCustomer('name', e.target.value)} 
-              />
-              <datalist id="customer-list">
-                {customerSuggestions.map((c, i) => (
-                  <option key={i} value={c.name}>{c.phone || ''}</option>
-                ))}
-              </datalist>
+              {customerSuggestions.length > 0 && (
+                <select 
+                  className="input-field" 
+                  style={{ marginBottom: isNewCustomer ? '10px' : '0' }}
+                  value={isNewCustomer ? 'NEW' : form.customer.name}
+                  onChange={e => handleCustomerSelect(e.target.value)}
+                >
+                  <option value="" disabled>Select a customer...</option>
+                  {customerSuggestions.map((c, i) => (
+                    <option key={i} value={c.name}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
+                  ))}
+                  <option value="NEW">➕ Add New Customer</option>
+                </select>
+              )}
+              
+              {(isNewCustomer || customerSuggestions.length === 0) && (
+                <input 
+                  className="input-field highlight-input" 
+                  placeholder="Type new customer name..." 
+                  required
+                  value={form.customer.name} 
+                  onChange={e => handleCustomer('name', e.target.value)} 
+                />
+              )}
             </div>
             <div className="form-group">
               <label>Phone</label>
