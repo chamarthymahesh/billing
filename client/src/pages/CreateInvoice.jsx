@@ -28,6 +28,8 @@ export default function CreateInvoice() {
     },
     items: [{ ...EMPTY_ITEM }],
     transportCharges: 0,
+    commissionType: 'manual',
+    commissionPercentage: 0,
     commission: 0,
     adjustment: 0,
     notes: '',
@@ -150,10 +152,15 @@ export default function CreateInvoice() {
 
   const subTotal = form.items.reduce((s, i) => s + calcItem(i).amount, 0);
   const totalGst = form.isGst ? form.items.reduce((s, i) => s + calcItem(i).gst, 0) : 0;
+  const calculatedCommission = form.commissionType === 'percentage'
+    ? (subTotal * (Number(form.commissionPercentage) || 0)) / 100
+    : (Number(form.commission) || 0);
+
   const grandTotal =
     subTotal +
     totalGst +
     Number(form.transportCharges || 0) +
+    calculatedCommission +
     Number(form.adjustment || 0);
 
   const handleSubmit = async (e) => {
@@ -162,6 +169,7 @@ export default function CreateInvoice() {
     try {
       const payload = {
         ...form,
+        commission: calculatedCommission,
         companyId: user.companyId,
         subTotal,
         totalGst,
@@ -418,16 +426,41 @@ export default function CreateInvoice() {
         <div className="form-bottom">
           <div className="glass-card charges-card">
             <h2 className="section-title">Additional Charges</h2>
-            <div className="form-group">
-              <label>Transport Charges (₹)</label>
-              <input type="number" step="any" className="input-field" min="0" value={form.transportCharges}
-                onChange={e => setForm(f => ({ ...f, transportCharges: e.target.value }))} />
+            {/* Transport Charges Hidden per User Request */}
+            
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Commission Type</label>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                <label className="checkbox-label" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <input type="radio" name="commissionType" checked={form.commissionType === 'manual'}
+                    onChange={() => setForm(f => ({ ...f, commissionType: 'manual' }))} />
+                  <span style={{ marginLeft: 5 }}>Manual (₹)</span>
+                </label>
+                <label className="checkbox-label" style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 10 }}>
+                  <input type="radio" name="commissionType" checked={form.commissionType === 'percentage'}
+                    onChange={() => setForm(f => ({ ...f, commissionType: 'percentage' }))} />
+                  <span style={{ marginLeft: 5 }}>Percentage (%)</span>
+                </label>
+              </div>
             </div>
-            <div className="form-group">
-              <label>Commission (₹)</label>
-              <input type="number" step="any" className="input-field" min="0" value={form.commission}
-                onChange={e => setForm(f => ({ ...f, commission: e.target.value }))} />
-            </div>
+
+            {form.commissionType === 'manual' ? (
+              <div className="form-group">
+                <label>Commission Amount (₹)</label>
+                <input type="number" step="any" className="input-field highlight-input" min="0" value={form.commission}
+                  onChange={e => setForm(f => ({ ...f, commission: e.target.value }))} />
+              </div>
+            ) : (
+              <div className="form-group">
+                <label>Commission Percentage (%)</label>
+                <input type="number" step="any" className="input-field highlight-input" min="0" max="100" value={form.commissionPercentage}
+                  onChange={e => setForm(f => ({ ...f, commissionPercentage: e.target.value }))} />
+                <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '4px', fontWeight: 'bold' }}>
+                  Calculated: ₹{((subTotal * (Number(form.commissionPercentage) || 0)) / 100).toFixed(2)}
+                </div>
+              </div>
+            )}
+            
             <div className="form-group">
               <label>Adjustment (₹) — round-off, discount etc.</label>
               <input type="number" step="any" className="input-field" value={form.adjustment}
@@ -451,8 +484,15 @@ export default function CreateInvoice() {
                   <div className="summary-row"><span>Total GST</span><span>₹{totalGst.toFixed(2)}</span></div>
                 </>
               )}
-              <div className="summary-row"><span>Transport</span><span>₹{Number(form.transportCharges || 0).toFixed(2)}</span></div>
-              <div className="summary-row"><span>Adjustment</span><span>₹{Number(form.adjustment || 0).toFixed(2)}</span></div>
+              {Number(form.transportCharges) > 0 && (
+                <div className="summary-row"><span>Transport</span><span>₹{Number(form.transportCharges).toFixed(2)}</span></div>
+              )}
+              {calculatedCommission > 0 && (
+                <div className="summary-row"><span>Commission</span><span>₹{calculatedCommission.toFixed(2)}</span></div>
+              )}
+              {Number(form.adjustment) !== 0 && (
+                <div className="summary-row"><span>Adjustment</span><span>₹{Number(form.adjustment).toFixed(2)}</span></div>
+              )}
               <div className="summary-row grand"><span>Grand Total</span><span>₹{grandTotal.toFixed(2)}</span></div>
             </div>
             <button id="submit-invoice-btn" type="submit" className="btn-primary submit-btn" disabled={loading}>
