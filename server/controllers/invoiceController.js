@@ -3,7 +3,7 @@ const Company = require('../models/Company');
 
 exports.createInvoice = async (req, res) => {
   try {
-    const { companyId, items, transportCharges, commission, isGst } = req.body;
+    const { companyId, items, transportCharges, commission, isGst, adjustment } = req.body;
     
     // Fetch company to get next invoice number
     const company = await Company.findById(companyId);
@@ -56,7 +56,7 @@ exports.createInvoice = async (req, res) => {
     // We can also subtract commission from the overall profit if it applies to the invoice
     // totalProfit -= (Number(commission) || 0); // Deciding to keep Gross Profit on items vs Net Profit. Let's just track item profit for now.
     
-    const grandTotal = subTotal + totalGst + (Number(transportCharges) || 0) + (Number(commission) || 0);
+    const grandTotal = subTotal + totalGst + (Number(transportCharges) || 0) + (Number(adjustment) || 0);
 
     const invoice = await Invoice.create({
       ...req.body,

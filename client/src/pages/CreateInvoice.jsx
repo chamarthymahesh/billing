@@ -160,7 +160,6 @@ export default function CreateInvoice() {
     subTotal +
     totalGst +
     Number(form.transportCharges || 0) +
-    calculatedCommission +
     Number(form.adjustment || 0);
 
   const handleSubmit = async (e) => {
@@ -486,9 +485,6 @@ export default function CreateInvoice() {
               )}
               {Number(form.transportCharges) > 0 && (
                 <div className="summary-row"><span>Transport</span><span>₹{Number(form.transportCharges).toFixed(2)}</span></div>
-              )}
-              {calculatedCommission > 0 && (
-                <div className="summary-row"><span>Commission</span><span>₹{calculatedCommission.toFixed(2)}</span></div>
               )}
               {Number(form.adjustment) !== 0 && (
                 <div className="summary-row"><span>Adjustment</span><span>₹{Number(form.adjustment).toFixed(2)}</span></div>

@@ -84,7 +84,6 @@ export default function Invoices() {
                   <th>Subtotal</th>
                   <th>GST</th>
                   <th>Transport</th>
-                  <th>Commission</th>
                   <th>Total</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -92,7 +91,7 @@ export default function Invoices() {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="11" className="empty-row">No invoices found</td></tr>
+                  <tr><td colSpan="10" className="empty-row">No invoices found</td></tr>
                 ) : filtered.map(inv => {
                   if (!inv) return null;
                   return (
@@ -104,7 +103,6 @@ export default function Invoices() {
                       <td>₹{(inv.subTotal || 0).toLocaleString('en-IN')}</td>
                       <td>₹{(inv.totalGst || 0).toLocaleString('en-IN')}</td>
                       <td>₹{(inv.transportCharges || 0).toLocaleString('en-IN')}</td>
-                      <td>₹{(inv.commission || 0).toLocaleString('en-IN')}</td>
                       <td className="grand-total">₹{(inv.grandTotal || 0).toLocaleString('en-IN')}</td>
                       <td>
                         {user?.role === 'companyadmin' ? (
