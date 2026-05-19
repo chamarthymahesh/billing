@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import './Dashboard.css';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ totalSales: 0, totalGst: 0, totalCommission: 0, totalTransport: 0, count: 0 });
+  const [stats, setStats] = useState({ totalSales: 0, totalGst: 0, totalCommission: 0, totalTransport: 0, totalProfit: 0, count: 0 });
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +38,7 @@ export default function Dashboard() {
   const statCards = [
     { label: 'Total Sales', value: `₹${stats.totalSales?.toLocaleString('en-IN', {minimumFractionDigits:2})}`, icon: '💰', color: '#6366f1' },
     { label: 'Total GST', value: `₹${stats.totalGst?.toLocaleString('en-IN', {minimumFractionDigits:2})}`, icon: '🏛️', color: '#10b981' },
+    { label: 'Overall Profit', value: `₹${(stats.totalProfit || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}`, icon: '📈', color: '#22c55e' },
     { label: 'Commission', value: `₹${stats.totalCommission?.toLocaleString('en-IN', {minimumFractionDigits:2})}`, icon: '🤝', color: '#f59e0b' },
     { label: 'Transport', value: `₹${stats.totalTransport?.toLocaleString('en-IN', {minimumFractionDigits:2})}`, icon: '🚚', color: '#3b82f6' },
     { label: 'Total Invoices', value: stats.count, icon: '🧾', color: '#ec4899' },
