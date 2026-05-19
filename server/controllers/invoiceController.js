@@ -117,7 +117,7 @@ exports.getReports = async (req, res) => {
       // P&L Data
       totalPurchases: purchases.reduce((sum, p) => sum + p.totalAmount, 0),
       purchaseGst: purchases.reduce((sum, p) => sum + (p.totalGst || 0), 0),
-      totalProfit: invoices.reduce((sum, inv) => sum + (inv.totalProfit || 0), 0),
+      totalProfit: invoices.reduce((sum, inv) => sum + ((inv.totalProfit || 0) - (inv.commission || 0) - (inv.transportCharges || 0)), 0),
       
       // Customer Commission breakdown
       customerCommissionList: Object.entries(invoices.reduce((acc, inv) => {
