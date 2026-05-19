@@ -100,10 +100,10 @@ exports.createInvoice = async (req, res) => {
       };
     });
 
-    // We can also subtract commission from the overall profit if it applies to the invoice
-    // totalProfit -= (Number(commission) || 0); // Deciding to keep Gross Profit on items vs Net Profit. Let's just track item profit for now.
-    
-    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0);
+    // Compute total profit including transport and commission deductions
+    totalProfit = totalProfit - (Number(transportCharges) || 0) - (Number(commission) || 0);
+    // Include transport charges in the grand total calculation
+    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0) + (Number(transportCharges) || 0);
 
     const invoice = await Invoice.create({
       ...req.body,
@@ -350,8 +350,10 @@ exports.updateInvoice = async (req, res) => {
       };
     });
 
+    // Compute total profit including transport and commission deductions
+    totalProfit = totalProfit - (Number(transportCharges) || 0) - (Number(commission) || 0);
     const grandTotal = subTotal + totalGst + (Number(adjustment) || 0);
-
+    
     const invoice = await Invoice.findByIdAndUpdate(
       req.params.id,
       {
