@@ -496,7 +496,7 @@ export default function Reports() {
                                   onClick={() => setViewInvoice(inv)}
                                   title="View Invoice & Commission Details"
                                 >
-                                  👁️ View
+                                  👁️
                                 </button>
                                 <button
                                   className="action-btn edit"
@@ -510,7 +510,7 @@ export default function Reports() {
                                   })}
                                   title="Edit Commission details"
                                 >
-                                  ✏️ Edit
+                                  ✏️
                                 </button>
                                 <button
                                   className="action-btn delete"
@@ -518,7 +518,7 @@ export default function Reports() {
                                   onClick={() => handleDeleteCommission(inv._id)}
                                   title="Delete/Clear Commission"
                                 >
-                                  🗑️ Delete
+                                  🗑️
                                 </button>
                               </div>
                             </td>
@@ -621,7 +621,7 @@ export default function Reports() {
                                   onClick={() => setViewInvoice(inv)}
                                   title="View Invoice & Transport Details"
                                 >
-                                  👁️ View
+                                  👁️
                                 </button>
                                 <button
                                   className="action-btn edit"
@@ -635,7 +635,7 @@ export default function Reports() {
                                   })}
                                   title="Edit Transport details"
                                 >
-                                  ✏️ Edit
+                                  ✏️
                                 </button>
                                 <button
                                   className="action-btn delete"
@@ -643,7 +643,7 @@ export default function Reports() {
                                   onClick={() => handleDeleteTransport(inv._id)}
                                   title="Delete/Clear Transport"
                                 >
-                                  🗑️ Delete
+                                  🗑️
                                 </button>
                               </div>
                             </td>
