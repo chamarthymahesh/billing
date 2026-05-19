@@ -2,13 +2,16 @@ const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 
 const calculateNetInvoiceProfit = (inv, purchases) => {
-  const invoicePurchaseCost = inv.items.reduce((itemSum, item) => {
+  const itemProfitsSum = inv.items.reduce((sum, item) => {
+    // 1. Find matching purchase for this item
     const matchedPurchase = purchases.find(p => 
       p.productId?.toString() === item.productId?.toString() || 
       (p.productId && item.productId && p.productId.toString() === item.productId.toString())
     );
+
     let itemPurchaseCost = 0;
     if (matchedPurchase && matchedPurchase.quantity > 0) {
+      // Landed cost including GST, packaging, transport and misc
       const totalPurchaseCostWithCharges = matchedPurchase.totalAmount + 
         (matchedPurchase.packagingCharges || 0) + 
         (matchedPurchase.transportCharges || 0) + 
@@ -16,32 +19,29 @@ const calculateNetInvoiceProfit = (inv, purchases) => {
       const purchasePricePerUnit = totalPurchaseCostWithCharges / matchedPurchase.quantity;
       itemPurchaseCost = purchasePricePerUnit * item.quantity;
     } else {
+      // Fallback to catalog price
       const basePrice = item.purchasePrice || 0;
       const gstAmt = item.isGst ? (basePrice * (item.gstRate || 0)) / 100 : 0;
       itemPurchaseCost = (basePrice + gstAmt) * item.quantity;
     }
-    return itemSum + itemPurchaseCost;
+
+    // 2. Selling total for this item (with GST)
+    const sellingItemTotal = item.total || (item.amount + (item.isGst ? (item.amount * (item.gstRate || 0)) / 100 : 0));
+
+    // 3. Item Gross Profit
+    const itemGrossProfit = sellingItemTotal - itemPurchaseCost;
+
+    // 4. Profit on GST
+    const itemProfitOnGst = item.isGst ? itemGrossProfit * ((item.gstRate || 0) / 100) : 0;
+
+    // 5. Item Net Profit before invoice-level charges
+    const itemNetProfit = itemGrossProfit - itemProfitOnGst;
+
+    return sum + itemNetProfit;
   }, 0);
 
-  const invoicePurchaseGst = inv.items.reduce((gstSum, item) => {
-    const matchedPurchase = purchases.find(p => 
-      p.productId?.toString() === item.productId?.toString() || 
-      (p.productId && item.productId && p.productId.toString() === item.productId.toString())
-    );
-    let itemPurchaseGst = 0;
-    if (matchedPurchase && matchedPurchase.quantity > 0) {
-      const gstPerUnit = (matchedPurchase.totalGst || 0) / matchedPurchase.quantity;
-      itemPurchaseGst = gstPerUnit * item.quantity;
-    } else {
-      itemPurchaseGst = item.isGst ? ((item.purchasePrice || 0) * (item.gstRate || 0) / 100) * item.quantity : 0;
-    }
-    return gstSum + itemPurchaseGst;
-  }, 0);
-
-  const sellingGst = inv.totalGst || 0;
-  const gstDifference = Math.max(0, sellingGst - invoicePurchaseGst);
-
-  return inv.grandTotal - invoicePurchaseCost - gstDifference - (inv.commission || 0) - (inv.transportCharges || 0);
+  // 6. Subtract invoice-level commissions, transport charges, and other adjustments
+  return itemProfitsSum - (inv.commission || 0) - (inv.transportCharges || 0);
 };
 
 exports.createInvoice = async (req, res) => {
