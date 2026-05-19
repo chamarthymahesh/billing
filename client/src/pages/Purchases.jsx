@@ -21,6 +21,9 @@ export default function Purchases() {
     billNumber: '',
     purchaseDate: new Date().toISOString().split('T')[0],
     paymentStatus: 'Pending',
+    packagingCharges: '',
+    transportCharges: '',
+    miscCharges: '',
     items: [{ ...EMPTY_ITEM }]
   });
   const [editForm, setEditForm] = useState(null);
@@ -121,7 +124,10 @@ export default function Purchases() {
           rate: Number(item.rate),
           gstRate: Number(item.gstRate),
           isGst: item.isGst,
-          paymentStatus: form.paymentStatus
+          paymentStatus: form.paymentStatus,
+          packagingCharges: Number(form.packagingCharges || 0),
+          transportCharges: Number(form.transportCharges || 0),
+          miscCharges: Number(form.miscCharges || 0)
         };
         return API.post('/purchases', payload);
       });
@@ -132,7 +138,11 @@ export default function Purchases() {
       setForm({
         supplierName: '', supplierGstin: '', billNumber: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-        paymentStatus: 'Pending', items: [{ ...EMPTY_ITEM }]
+        paymentStatus: 'Pending',
+        packagingCharges: '',
+        transportCharges: '',
+        miscCharges: '',
+        items: [{ ...EMPTY_ITEM }]
       });
     } catch (err) {
       alert(err.message || 'Error saving purchase');
@@ -154,6 +164,9 @@ export default function Purchases() {
         billNumber: editForm.billNumber,
         purchaseDate: editForm.purchaseDate,
         paymentStatus: editForm.paymentStatus,
+        packagingCharges: Number(editForm.packagingCharges || 0),
+        transportCharges: Number(editForm.transportCharges || 0),
+        miscCharges: Number(editForm.miscCharges || 0),
         items: editForm.items
       };
       // Call the new group PUT route
@@ -180,6 +193,9 @@ export default function Purchases() {
       billNumber: billGroup.billNumber,
       purchaseDate: new Date(billGroup.purchaseDate).toISOString().split('T')[0],
       paymentStatus: billGroup.paymentStatus,
+      packagingCharges: billGroup.packagingCharges || 0,
+      transportCharges: billGroup.transportCharges || 0,
+      miscCharges: billGroup.miscCharges || 0,
       items: billGroup.items.map(i => ({
         productId: i.productId?._id || '',
         quantity: i.quantity,
@@ -229,19 +245,69 @@ export default function Purchases() {
           totalItems: 0,
           totalAmount: 0,
           totalGst: 0,
+          packagingCharges: p.packagingCharges || 0,
+          transportCharges: p.transportCharges || 0,
+          miscCharges: p.miscCharges || 0,
           items: []
         };
       }
       groups[p.billNumber].items.push(p);
       groups[p.billNumber].totalItems += p.quantity;
-      groups[p.billNumber].totalAmount += p.totalAmount;
       groups[p.billNumber].totalGst += p.totalGst;
     });
+
+    // Calculate grand total for each group including the charges
+    Object.values(groups).forEach(g => {
+      const itemsSum = g.items.reduce((sum, item) => sum + item.totalAmount, 0);
+      g.totalAmount = itemsSum + (g.packagingCharges || 0) + (g.transportCharges || 0) + (g.miscCharges || 0);
+    });
+
     // Convert to array and sort by date descending
     return Object.values(groups).sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
   }, [purchases]);
 
   const totalPurchaseValue = groupedPurchases.reduce((sum, g) => sum + g.totalAmount, 0);
+
+  const calculatedFormTotal = useMemo(() => {
+    let itemsSum = 0;
+    form.items.forEach(item => {
+      const q = Number(item.quantity || 0);
+      const r = Number(item.rate || 0);
+      const sub = q * r;
+      let gst = 0;
+      if (item.isGst) {
+        gst = (sub * Number(item.gstRate || 0)) / 100;
+      }
+      itemsSum += sub + gst;
+    });
+    const extra = Number(form.packagingCharges || 0) + Number(form.transportCharges || 0) + Number(form.miscCharges || 0);
+    return {
+      itemsSum,
+      extra,
+      grandTotal: itemsSum + extra
+    };
+  }, [form]);
+
+  const calculatedEditFormTotal = useMemo(() => {
+    if (!editForm) return { itemsSum: 0, extra: 0, grandTotal: 0 };
+    let itemsSum = 0;
+    editForm.items.forEach(item => {
+      const q = Number(item.quantity || 0);
+      const r = Number(item.rate || 0);
+      const sub = q * r;
+      let gst = 0;
+      if (item.isGst) {
+        gst = (sub * Number(item.gstRate || 0)) / 100;
+      }
+      itemsSum += sub + gst;
+    });
+    const extra = Number(editForm.packagingCharges || 0) + Number(editForm.transportCharges || 0) + Number(editForm.miscCharges || 0);
+    return {
+      itemsSum,
+      extra,
+      grandTotal: itemsSum + extra
+    };
+  }, [editForm]);
 
   return (
     <Layout>
@@ -362,6 +428,28 @@ export default function Purchases() {
                   </table>
                 </div>
 
+                <div className="charges-summary-section" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px', marginTop: '20px', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="charges-inputs" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div className="form-group">
+                      <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Packaging Charges (₹)</label>
+                      <input type="number" step="any" className="input-field" style={{ padding: '8px' }} value={form.packagingCharges} onChange={e => setForm({...form, packagingCharges: e.target.value})} placeholder="0" />
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Transport Charges (₹)</label>
+                      <input type="number" step="any" className="input-field" style={{ padding: '8px' }} value={form.transportCharges} onChange={e => setForm({...form, transportCharges: e.target.value})} placeholder="0" />
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Other Misc (₹)</label>
+                      <input type="number" step="any" className="input-field" style={{ padding: '8px' }} value={form.miscCharges} onChange={e => setForm({...form, miscCharges: e.target.value})} placeholder="0" />
+                    </div>
+                  </div>
+                  <div className="live-totals-preview" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', paddingRight: '10px' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '4px' }}>Items Total: ₹{calculatedFormTotal.itemsSum.toFixed(2)}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '4px' }}>Extra Charges: +₹{calculatedFormTotal.extra.toFixed(2)}</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>Grand Total: ₹{calculatedFormTotal.grandTotal.toFixed(2)}</div>
+                  </div>
+                </div>
+
                 <div className="modal-footer" style={{ marginTop: '20px' }}>
                   <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
                   <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Record Purchase'}</button>
@@ -462,6 +550,28 @@ export default function Purchases() {
                   </table>
                 </div>
 
+                <div className="charges-summary-section" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px', marginTop: '20px', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="charges-inputs" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div className="form-group">
+                      <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Packaging Charges (₹)</label>
+                      <input type="number" step="any" className="input-field" style={{ padding: '8px' }} value={editForm.packagingCharges} onChange={e => setEditForm({...editForm, packagingCharges: e.target.value})} placeholder="0" />
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Transport Charges (₹)</label>
+                      <input type="number" step="any" className="input-field" style={{ padding: '8px' }} value={editForm.transportCharges} onChange={e => setEditForm({...editForm, transportCharges: e.target.value})} placeholder="0" />
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Other Misc (₹)</label>
+                      <input type="number" step="any" className="input-field" style={{ padding: '8px' }} value={editForm.miscCharges} onChange={e => setEditForm({...editForm, miscCharges: e.target.value})} placeholder="0" />
+                    </div>
+                  </div>
+                  <div className="live-totals-preview" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', paddingRight: '10px' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '4px' }}>Items Total: ₹{calculatedEditFormTotal.itemsSum.toFixed(2)}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '4px' }}>Extra Charges: +₹{calculatedEditFormTotal.extra.toFixed(2)}</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>Grand Total: ₹{calculatedEditFormTotal.grandTotal.toFixed(2)}</div>
+                  </div>
+                </div>
+
                 <div className="modal-footer" style={{ marginTop: '20px' }}>
                   <button type="button" className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
                   <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
@@ -472,40 +582,52 @@ export default function Purchases() {
         )}
 
         {/* VIEW MODAL */}
-        {showViewModal && viewBillNo && (
-          <div className="modal-overlay">
-            <motion.div className="modal glass-card" style={{ maxWidth: '800px', width: '90%' }}>
-              <div className="modal-header">
-                <h2>Bill Details: {viewBillNo}</h2>
-                <button className="close-btn" onClick={() => setShowViewModal(false)}>✕</button>
-              </div>
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Qty</th>
-                      <th>Rate</th>
-                      <th>GST</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {purchases.filter(p => p.billNumber === viewBillNo).map(p => (
-                      <tr key={p._id}>
-                        <td>{p.productId?.name}</td>
-                        <td>{p.quantity}</td>
-                        <td>₹{p.rate}</td>
-                        <td>₹{p.totalGst.toFixed(2)}</td>
-                        <td>₹{p.totalAmount.toFixed(2)}</td>
+        {showViewModal && viewBillNo && (() => {
+          const viewGroup = groupedPurchases.find(g => g.billNumber === viewBillNo);
+          return (
+            <div className="modal-overlay">
+              <motion.div className="modal glass-card" style={{ maxWidth: '800px', width: '90%' }}>
+                <div className="modal-header">
+                  <h2>Bill Details: {viewBillNo}</h2>
+                  <button className="close-btn" onClick={() => setShowViewModal(false)}>✕</button>
+                </div>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>GST</th>
+                        <th>Total</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          </div>
-        )}
+                    </thead>
+                    <tbody>
+                      {purchases.filter(p => p.billNumber === viewBillNo).map(p => (
+                        <tr key={p._id}>
+                          <td>{p.productId?.name}</td>
+                          <td>{p.quantity}</td>
+                          <td>₹{p.rate}</td>
+                          <td>₹{p.totalGst.toFixed(2)}</td>
+                          <td>₹{p.totalAmount.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {viewGroup && (
+                  <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px' }}>
+                    <div style={{ fontSize: '0.95rem', color: '#94a3b8' }}>Items Total: ₹{(viewGroup.totalAmount - (viewGroup.packagingCharges || 0) - (viewGroup.transportCharges || 0) - (viewGroup.miscCharges || 0)).toFixed(2)}</div>
+                    <div style={{ fontSize: '0.95rem', color: '#94a3b8' }}>Packaging Charges: +₹{(viewGroup.packagingCharges || 0).toFixed(2)}</div>
+                    <div style={{ fontSize: '0.95rem', color: '#94a3b8' }}>Transport Charges: +₹{(viewGroup.transportCharges || 0).toFixed(2)}</div>
+                    <div style={{ fontSize: '0.95rem', color: '#94a3b8' }}>Other Misc Charges: +₹{(viewGroup.miscCharges || 0).toFixed(2)}</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#10b981', marginTop: '5px' }}>Grand Total: ₹{viewGroup.totalAmount.toFixed(2)}</div>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       <div className="glass-card">

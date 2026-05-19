@@ -16,6 +16,9 @@ const purchaseSchema = new mongoose.Schema({
   totalGst: { type: Number, default: 0 },
   subTotal: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
+  packagingCharges: { type: Number, default: 0 },
+  transportCharges: { type: Number, default: 0 },
+  miscCharges: { type: Number, default: 0 },
   isGst: { type: Boolean, default: false },
   paymentStatus: { type: String, enum: ['Paid', 'Pending'], default: 'Pending' }
 }, { timestamps: true });

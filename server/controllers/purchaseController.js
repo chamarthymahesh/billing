@@ -118,7 +118,7 @@ exports.updatePurchaseBill = async (req, res) => {
 
     await Purchase.deleteMany({ billNumber, companyId });
 
-    const { items, supplierName, supplierGstin, billNumber: newBillNumber, purchaseDate, paymentStatus } = req.body;
+    const { items, supplierName, supplierGstin, billNumber: newBillNumber, purchaseDate, paymentStatus, packagingCharges, transportCharges, miscCharges } = req.body;
     
     for (const item of items) {
       const subTotal = item.quantity * item.rate;
@@ -142,6 +142,9 @@ exports.updatePurchaseBill = async (req, res) => {
         rate: item.rate,
         gstRate: item.gstRate,
         isGst: item.isGst,
+        packagingCharges: Number(packagingCharges || 0),
+        transportCharges: Number(transportCharges || 0),
+        miscCharges: Number(miscCharges || 0),
         subTotal,
         totalGst,
         cgst,
