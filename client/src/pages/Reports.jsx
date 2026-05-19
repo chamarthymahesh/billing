@@ -860,7 +860,7 @@ export default function Reports() {
                           </div>
                         </td>
                         <td style={{ color: '#10b981', fontWeight: 'bold' }}>
-                          ₹{((inv.totalProfit || 0) - (inv.commission || 0) - (inv.transportCharges || 0)).toLocaleString('en-IN')}
+                          ₹{(inv.totalProfit || 0).toLocaleString('en-IN')}
                         </td>
                         <td className="grand-total">₹{inv.grandTotal?.toLocaleString('en-IN')}</td>
                         <td>

@@ -1,6 +1,49 @@
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 
+const calculateNetInvoiceProfit = (inv, purchases) => {
+  const invoicePurchaseCost = inv.items.reduce((itemSum, item) => {
+    const matchedPurchase = purchases.find(p => 
+      p.productId?.toString() === item.productId?.toString() || 
+      (p.productId && item.productId && p.productId.toString() === item.productId.toString())
+    );
+    let itemPurchaseCost = 0;
+    if (matchedPurchase && matchedPurchase.quantity > 0) {
+      const totalPurchaseCostWithCharges = matchedPurchase.totalAmount + 
+        (matchedPurchase.packagingCharges || 0) + 
+        (matchedPurchase.transportCharges || 0) + 
+        (matchedPurchase.miscCharges || 0);
+      const purchasePricePerUnit = totalPurchaseCostWithCharges / matchedPurchase.quantity;
+      itemPurchaseCost = purchasePricePerUnit * item.quantity;
+    } else {
+      const basePrice = item.purchasePrice || 0;
+      const gstAmt = item.isGst ? (basePrice * (item.gstRate || 0)) / 100 : 0;
+      itemPurchaseCost = (basePrice + gstAmt) * item.quantity;
+    }
+    return itemSum + itemPurchaseCost;
+  }, 0);
+
+  const invoicePurchaseGst = inv.items.reduce((gstSum, item) => {
+    const matchedPurchase = purchases.find(p => 
+      p.productId?.toString() === item.productId?.toString() || 
+      (p.productId && item.productId && p.productId.toString() === item.productId.toString())
+    );
+    let itemPurchaseGst = 0;
+    if (matchedPurchase && matchedPurchase.quantity > 0) {
+      const gstPerUnit = (matchedPurchase.totalGst || 0) / matchedPurchase.quantity;
+      itemPurchaseGst = gstPerUnit * item.quantity;
+    } else {
+      itemPurchaseGst = item.isGst ? ((item.purchasePrice || 0) * (item.gstRate || 0) / 100) * item.quantity : 0;
+    }
+    return gstSum + itemPurchaseGst;
+  }, 0);
+
+  const sellingGst = inv.totalGst || 0;
+  const gstDifference = Math.max(0, sellingGst - invoicePurchaseGst);
+
+  return inv.grandTotal - invoicePurchaseCost - gstDifference - (inv.commission || 0) - (inv.transportCharges || 0);
+};
+
 exports.createInvoice = async (req, res) => {
   try {
     const { companyId, items, transportCharges, commission, isGst, adjustment } = req.body;
@@ -82,7 +125,17 @@ exports.getInvoices = async (req, res) => {
   try {
     const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
     const invoices = await Invoice.find(filter).populate('companyId', 'name').sort({ date: -1, createdAt: -1 });
-    res.json(invoices);
+    
+    const Purchase = require('../models/Purchase');
+    const purchases = await Purchase.find(filter);
+    
+    const processedInvoices = invoices.map(inv => {
+      const plainInv = inv.toObject();
+      plainInv.totalProfit = calculateNetInvoiceProfit(inv, purchases);
+      return plainInv;
+    });
+
+    res.json(processedInvoices);
   } catch (error) {
     console.error('GET_INVOICES_ERROR:', error);
     res.status(500).json({ message: error.message });
@@ -93,7 +146,15 @@ exports.getInvoiceById = async (req, res) => {
   try {
     const invoice = await Invoice.findById(req.params.id).populate('companyId');
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
-    res.json(invoice);
+    
+    const Purchase = require('../models/Purchase');
+    const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
+    const purchases = await Purchase.find(filter);
+    
+    const plainInv = invoice.toObject();
+    plainInv.totalProfit = calculateNetInvoiceProfit(invoice, purchases);
+
+    res.json(plainInv);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -107,6 +168,9 @@ exports.getReports = async (req, res) => {
     const Purchase = require('../models/Purchase');
     const purchases = await Purchase.find(filter);
 
+    // Calculate total net profit for each invoice using helper
+    const calculatedTotalProfit = invoices.reduce((sum, inv) => sum + calculateNetInvoiceProfit(inv, purchases), 0);
+
     const stats = {
       totalSales: invoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
       totalGst: invoices.reduce((sum, inv) => sum + (inv.totalGst || 0), 0),
@@ -117,7 +181,7 @@ exports.getReports = async (req, res) => {
       // P&L Data
       totalPurchases: purchases.reduce((sum, p) => sum + p.totalAmount, 0),
       purchaseGst: purchases.reduce((sum, p) => sum + (p.totalGst || 0), 0),
-      totalProfit: invoices.reduce((sum, inv) => sum + ((inv.totalProfit || 0) - (inv.commission || 0) - (inv.transportCharges || 0)), 0),
+      totalProfit: calculatedTotalProfit,
       
       // Customer Commission breakdown
       customerCommissionList: Object.entries(invoices.reduce((acc, inv) => {
