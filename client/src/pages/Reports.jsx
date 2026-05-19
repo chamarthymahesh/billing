@@ -22,6 +22,12 @@ export default function Reports() {
   const [editCommission, setEditCommission] = useState(null); // { id, commission, commissionStatus, invoiceNumber, customerName }
   const [viewInvoice, setViewInvoice] = useState(null); // invoice object to view
 
+  // Transport specific states
+  const [transVendorFilter, setTransVendorFilter] = useState('');
+  const [transMonthFilter, setTransMonthFilter] = useState('');
+  const [transStatusFilter, setTransStatusFilter] = useState('all');
+  const [editTransport, setEditTransport] = useState(null); // { id, transportCharges, transportStatus, invoiceNumber, customerName }
+
   useEffect(() => {
     loadData();
   }, []);
@@ -106,6 +112,31 @@ export default function Reports() {
     });
     return { total, paid, unpaid };
   }, [commissionInvoices]);
+
+  const transportInvoices = useMemo(() => {
+    return invoices.filter(inv => {
+      if (!(inv.transportCharges > 0)) return false;
+      if (transVendorFilter && !inv.customer?.name?.toLowerCase().includes(transVendorFilter.toLowerCase())) return false;
+      if (transMonthFilter) {
+        const invMonth = new Date(inv.date).toISOString().substring(0, 7);
+        if (invMonth !== transMonthFilter) return false;
+      }
+      if (transStatusFilter !== 'all' && (inv.transportStatus || 'unpaid') !== transStatusFilter) return false;
+      return true;
+    });
+  }, [invoices, transVendorFilter, transMonthFilter, transStatusFilter]);
+
+  const transportStats = useMemo(() => {
+    let total = 0;
+    let paid = 0;
+    let unpaid = 0;
+    transportInvoices.forEach(inv => {
+      total += inv.transportCharges || 0;
+      if (inv.transportStatus === 'paid') paid += inv.transportCharges || 0;
+      else unpaid += inv.transportCharges || 0;
+    });
+    return { total, paid, unpaid };
+  }, [transportInvoices]);
 
   const summaryStats = stats ? [
     { label: 'Total Revenue', value: `₹${stats.totalSales?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: '💰', color: '#6366f1' },
@@ -194,6 +225,47 @@ export default function Reports() {
     }
   };
 
+  const handleToggleTransport = async (id, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+      const match = invoices.find(i => i._id === id);
+      await API.put(`/invoices/${id}/transport-details`, {
+        transportCharges: match ? match.transportCharges : 0,
+        transportStatus: newStatus
+      });
+      loadData();
+    } catch (err) {
+      alert('Error updating transport status');
+    }
+  };
+
+  const handleSaveTransportDetails = async (e) => {
+    e.preventDefault();
+    try {
+      await API.put(`/invoices/${editTransport.id}/transport-details`, {
+        transportCharges: Number(editTransport.transportCharges || 0),
+        transportStatus: editTransport.transportStatus
+      });
+      setEditTransport(null);
+      loadData();
+    } catch (err) {
+      alert('Error updating transport details');
+    }
+  };
+
+  const handleDeleteTransport = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this transport record? This sets the transport charges for this order to ₹0.')) return;
+    try {
+      await API.put(`/invoices/${id}/transport-details`, {
+        transportCharges: 0,
+        transportStatus: 'unpaid'
+      });
+      loadData();
+    } catch (err) {
+      alert('Error deleting transport');
+    }
+  };
+
   return (
     <Layout>
       <div className="page-header">
@@ -212,12 +284,13 @@ export default function Reports() {
       <div className="report-tabs">
         <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>📊 Overview</button>
         <button className={`tab-btn ${activeTab === 'commission' ? 'active' : ''}`} onClick={() => setActiveTab('commission')}>🤝 Commission Tracker</button>
+        <button className={`tab-btn ${activeTab === 'transport' ? 'active' : ''}`} onClick={() => setActiveTab('transport')}>🚚 Transport Tracker</button>
         <button className={`tab-btn ${activeTab === 'gstr1' ? 'active' : ''}`} onClick={() => setActiveTab('gstr1')}>🏛️ GSTR-1 Report</button>
         <button className={`tab-btn ${activeTab === 'pnl' ? 'active' : ''}`} onClick={() => setActiveTab('pnl')}>💸 Profit & Loss</button>
       </div>
 
       {/* Date Range Filter */}
-      {activeTab !== 'commission' && (
+      {activeTab !== 'commission' && activeTab !== 'transport' && (
         <div className="glass-card filter-bar">
         <span className="filter-label">Filter by Date:</span>
         <div className="date-range">
@@ -255,6 +328,30 @@ export default function Reports() {
                 <div>
                   <div className="stat-val">₹{commissionStats.unpaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                   <div className="stat-lbl">Pending Commission</div>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'transport' ? (
+            <div className="stat-grid" style={{ marginBottom: 24 }}>
+              <div className="glass-card stat-card-item" style={{ '--accent-color': '#3b82f6' }}>
+                <div className="stat-icon-wrap">🚚</div>
+                <div>
+                  <div className="stat-val">₹{transportStats.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div className="stat-lbl">Total Transport</div>
+                </div>
+              </div>
+              <div className="glass-card stat-card-item" style={{ '--accent-color': '#10b981' }}>
+                <div className="stat-icon-wrap">✅</div>
+                <div>
+                  <div className="stat-val">₹{transportStats.paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div className="stat-lbl">Paid Transport</div>
+                </div>
+              </div>
+              <div className="glass-card stat-card-item" style={{ '--accent-color': '#ef4444' }}>
+                <div className="stat-icon-wrap">⏳</div>
+                <div>
+                  <div className="stat-val">₹{transportStats.unpaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div className="stat-lbl">Pending Transport</div>
                 </div>
               </div>
             </div>
@@ -420,6 +517,131 @@ export default function Reports() {
                                   style={{ padding: '4px 10px', fontSize: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
                                   onClick={() => handleDeleteCommission(inv._id)}
                                   title="Delete/Clear Commission"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'transport' && (
+            <div className="reports-grid-v">
+              {/* Transport Filter Bar */}
+              <div className="glass-card filter-bar transport-filter-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', marginBottom: '24px' }}>
+                <span className="filter-label" style={{ fontWeight: '600', color: '#fff' }}>🔍 Filter Transport:</span>
+                <div className="date-range" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: 1 }}>
+                  <input
+                    id="trans-vendor-search"
+                    type="text"
+                    placeholder="Filter by Vendor..."
+                    className="input-field"
+                    style={{ flex: 1, minWidth: '180px' }}
+                    value={transVendorFilter}
+                    onChange={e => setTransVendorFilter(e.target.value)}
+                  />
+                  <input
+                    id="trans-month-select"
+                    type="month"
+                    className="input-field"
+                    style={{ flex: 1, minWidth: '150px' }}
+                    value={transMonthFilter}
+                    onChange={e => setTransMonthFilter(e.target.value)}
+                  />
+                  <select
+                    id="trans-status-select"
+                    className="input-field"
+                    style={{ flex: 1, minWidth: '150px' }}
+                    value={transStatusFilter}
+                    onChange={e => setTransStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="paid">Paid</option>
+                    <option value="unpaid">Unpaid</option>
+                  </select>
+                  <button className="btn-primary btn-sm" onClick={() => {
+                    setTransVendorFilter('');
+                    setTransMonthFilter('');
+                    setTransStatusFilter('all');
+                  }}>Clear Filters</button>
+                </div>
+              </div>
+
+              {/* Transport Ledger Table */}
+              <div className="glass-card report-table-card">
+                <h2 className="section-title">Transport Charges Ledger ({transportInvoices.length} entries)</h2>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Order / Invoice #</th>
+                        <th>Month</th>
+                        <th>Date</th>
+                        <th>Vendor / Party</th>
+                        <th>Transport Charges</th>
+                        <th>Payment Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {transportInvoices.length === 0 ? (
+                        <tr><td colSpan="7" className="empty-row">No transport charge records match your filters</td></tr>
+                      ) : transportInvoices.map(inv => {
+                        const monthStr = new Date(inv.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+                        return (
+                          <tr key={inv._id}>
+                            <td className="inv-num-cell">{inv.invoiceNumber}</td>
+                            <td><strong>{monthStr}</strong></td>
+                            <td>{new Date(inv.date).toLocaleDateString('en-IN')}</td>
+                            <td className="cust-name-cell">👤 {inv.customer?.name || 'N/A'}</td>
+                            <td className="trans-val-cell" style={{ fontWeight: 'bold', color: '#3b82f6' }}>
+                              ₹{(inv.transportCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td>
+                              <button
+                                className={`comm-status-badge ${inv.transportStatus === 'paid' ? 'paid' : 'unpaid'}`}
+                                onClick={() => handleToggleTransport(inv._id, inv.transportStatus || 'unpaid')}
+                                title="Click to quickly toggle status"
+                              >
+                                {inv.transportStatus === 'paid' ? '✅ Paid' : '⏳ Unpaid'}
+                              </button>
+                            </td>
+                            <td>
+                              <div className="action-btns" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button
+                                  className="action-btn view"
+                                  style={{ padding: '4px 10px', fontSize: '12px' }}
+                                  onClick={() => setViewInvoice(inv)}
+                                  title="View Invoice & Transport Details"
+                                >
+                                  👁️ View
+                                </button>
+                                <button
+                                  className="action-btn edit"
+                                  style={{ padding: '4px 10px', fontSize: '12px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: '1px solid rgba(99, 102, 241, 0.2)' }}
+                                  onClick={() => setEditTransport({
+                                    id: inv._id,
+                                    transportCharges: inv.transportCharges,
+                                    transportStatus: inv.transportStatus || 'unpaid',
+                                    invoiceNumber: inv.invoiceNumber,
+                                    customerName: inv.customer?.name || 'N/A'
+                                  })}
+                                  title="Edit Transport details"
+                                >
+                                  ✏️ Edit
+                                </button>
+                                <button
+                                  className="action-btn delete"
+                                  style={{ padding: '4px 10px', fontSize: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                                  onClick={() => handleDeleteTransport(inv._id)}
+                                  title="Delete/Clear Transport"
                                 >
                                   🗑️ Delete
                                 </button>
@@ -763,17 +985,32 @@ export default function Reports() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
-              <div style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px dashed rgba(245, 158, 11, 0.2)', borderRadius: '8px', padding: '12px' }}>
-                <h4 style={{ margin: '0 0 8px', color: '#f59e0b', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>🤝 Commission Information</h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
-                  <span>Recorded Amount:</span>
-                  <strong style={{ color: '#f59e0b' }}>₹{(viewInvoice.commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px dashed rgba(245, 158, 11, 0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <h4 style={{ margin: '0 0 8px', color: '#f59e0b', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>🤝 Commission Information</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
+                    <span>Recorded Amount:</span>
+                    <strong style={{ color: '#f59e0b' }}>₹{(viewInvoice.commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                    <span>Payout Status:</span>
+                    <span className={`comm-status-badge ${viewInvoice.commissionStatus || 'unpaid'}`} style={{ margin: 0 }}>
+                      {viewInvoice.commissionStatus === 'paid' ? '✅ Paid' : '⏳ Unpaid'}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span>Payout Status:</span>
-                  <span className={`comm-status-badge ${viewInvoice.commissionStatus || 'unpaid'}`} style={{ margin: 0 }}>
-                    {viewInvoice.commissionStatus === 'paid' ? '✅ Paid' : '⏳ Unpaid'}
-                  </span>
+                <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px dashed rgba(59, 130, 246, 0.2)', borderRadius: '8px', padding: '12px' }}>
+                  <h4 style={{ margin: '0 0 8px', color: '#3b82f6', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>🚚 Transport Information</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
+                    <span>Recorded Amount:</span>
+                    <strong style={{ color: '#3b82f6' }}>₹{(viewInvoice.transportCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                    <span>Payment Status:</span>
+                    <span className={`comm-status-badge ${viewInvoice.transportStatus === 'paid' ? 'paid' : 'unpaid'}`} style={{ margin: 0 }}>
+                      {viewInvoice.transportStatus === 'paid' ? '✅ Paid' : '⏳ Unpaid'}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
@@ -809,6 +1046,54 @@ export default function Reports() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
               <button className="btn-secondary" onClick={() => setViewInvoice(null)}>Close</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Transport Modal */}
+      {editTransport && (
+        <div className="modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div className="glass-card modal-content" style={{ width: '100%', maxWidth: '480px', padding: '24px', position: 'relative', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '20px', fontWeight: '600', color: '#fff', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px' }}>✏️ Edit Transport Details</h3>
+            <form onSubmit={handleSaveTransportDetails}>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Order / Invoice No</label>
+                <input type="text" className="input-field" value={editTransport.invoiceNumber} disabled style={{ opacity: 0.7, cursor: 'not-allowed' }} />
+              </div>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Vendor / Customer Name</label>
+                <input type="text" className="input-field" value={editTransport.customerName} disabled style={{ opacity: 0.7, cursor: 'not-allowed' }} />
+              </div>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Transport Charges (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  required
+                  value={editTransport.transportCharges}
+                  onChange={e => setEditTransport(prev => ({ ...prev, transportCharges: e.target.value }))}
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Payment Status</label>
+                <select
+                  className="input-field"
+                  value={editTransport.transportStatus}
+                  onChange={e => setEditTransport(prev => ({ ...prev, transportStatus: e.target.value }))}
+                >
+                  <option value="unpaid">⏳ Unpaid / Pending</option>
+                  <option value="paid">✅ Paid</option>
+                </select>
+              </div>
+              <div className="modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn-secondary" onClick={() => setEditTransport(null)}>Cancel</button>
+                <button type="submit" className="btn-primary">Save Changes</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

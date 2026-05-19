@@ -29,6 +29,7 @@ export default function CreateInvoice() {
     },
     items: [{ ...EMPTY_ITEM }],
     transportCharges: 0,
+    transportStatus: 'unpaid',
     commissionType: 'manual',
     commissionPercentage: 0,
     commission: 0,
@@ -79,6 +80,7 @@ export default function CreateInvoice() {
           },
           items: inv.items || [{ ...EMPTY_ITEM }],
           transportCharges: inv.transportCharges || 0,
+          transportStatus: inv.transportStatus || 'unpaid',
           commissionType: inv.commissionType || 'manual',
           commissionPercentage: inv.commissionPercentage || 0,
           commission: inv.commission || 0,
@@ -190,7 +192,6 @@ export default function CreateInvoice() {
   const grandTotal =
     subTotal +
     totalGst +
-    Number(form.transportCharges || 0) +
     Number(form.adjustment || 0);
 
   const handleSubmit = async (e) => {
@@ -460,7 +461,21 @@ export default function CreateInvoice() {
         <div className="form-bottom">
           <div className="glass-card charges-card">
             <h2 className="section-title">Additional Charges</h2>
-            {/* Transport Charges Hidden per User Request */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', gridColumn: '1 / -1', marginBottom: '16px' }}>
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: '8px' }}>Transport Charges (₹)</label>
+                <input type="number" step="any" className="input-field" min="0" value={form.transportCharges}
+                  onChange={e => setForm(f => ({ ...f, transportCharges: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: '8px' }}>Transport Payment Status</label>
+                <select className="input-field" value={form.transportStatus || 'unpaid'}
+                  onChange={e => setForm(f => ({ ...f, transportStatus: e.target.value }))}>
+                  <option value="unpaid">⏳ Unpaid / Pending</option>
+                  <option value="paid">✅ Paid</option>
+                </select>
+              </div>
+            </div>
             
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label>Commission Type</label>
@@ -518,9 +533,7 @@ export default function CreateInvoice() {
                   <div className="summary-row"><span>Total GST</span><span>₹{totalGst.toFixed(2)}</span></div>
                 </>
               )}
-              {Number(form.transportCharges) > 0 && (
-                <div className="summary-row"><span>Transport</span><span>₹{Number(form.transportCharges).toFixed(2)}</span></div>
-              )}
+
               {Number(form.adjustment) !== 0 && (
                 <div className="summary-row"><span>Adjustment</span><span>₹{Number(form.adjustment).toFixed(2)}</span></div>
               )}

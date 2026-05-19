@@ -1,5 +1,5 @@
 const express = require('express');
-const { createInvoice, getInvoices, getInvoiceById, getReports, updateCommissionStatus, updateCommissionDetails, updateInvoice, deleteInvoice } = require('../controllers/invoiceController');
+const { createInvoice, getInvoices, getInvoiceById, getReports, updateCommissionStatus, updateCommissionDetails, updateInvoice, deleteInvoice, updateTransportDetails } = require('../controllers/invoiceController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -21,5 +21,6 @@ router.put('/:id/status', protect, (req, res, next) => {
 });
 router.put('/:id/commission', protect, updateCommissionStatus);
 router.put('/:id/commission-details', protect, updateCommissionDetails);
+router.put('/:id/transport-details', protect, updateTransportDetails);
 
 module.exports = router;

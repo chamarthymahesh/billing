@@ -33,6 +33,7 @@ const invoiceSchema = new mongoose.Schema({
   subTotal: { type: Number, required: true },
   totalGst: { type: Number, default: 0 },
   transportCharges: { type: Number, default: 0 },
+  transportStatus: { type: String, enum: ['unpaid', 'paid'], default: 'unpaid' },
   commission: { type: Number, default: 0 },
   commissionStatus: { type: String, enum: ['unpaid', 'paid'], default: 'unpaid' },
   adjustment: { type: Number, default: 0 },

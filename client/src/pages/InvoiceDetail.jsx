@@ -167,12 +167,7 @@ export default function InvoiceDetail() {
                 </div>
               </>
             )}
-            {invoice.transportCharges > 0 && (
-              <div className="summary-row">
-                <span>Transport:</span>
-                <span>₹{invoice.transportCharges.toFixed(2)}</span>
-              </div>
-            )}
+
             {invoice.adjustment !== 0 && (
               <div className="summary-row">
                 <span>Adjustment:</span>

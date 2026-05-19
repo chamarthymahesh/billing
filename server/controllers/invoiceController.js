@@ -56,7 +56,7 @@ exports.createInvoice = async (req, res) => {
     // We can also subtract commission from the overall profit if it applies to the invoice
     // totalProfit -= (Number(commission) || 0); // Deciding to keep Gross Profit on items vs Net Profit. Let's just track item profit for now.
     
-    const grandTotal = subTotal + totalGst + (Number(transportCharges) || 0) + (Number(adjustment) || 0);
+    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0);
 
     const invoice = await Invoice.create({
       ...req.body,
@@ -282,7 +282,7 @@ exports.updateInvoice = async (req, res) => {
       };
     });
 
-    const grandTotal = subTotal + totalGst + (Number(transportCharges) || 0) + (Number(adjustment) || 0);
+    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0);
 
     const invoice = await Invoice.findByIdAndUpdate(
       req.params.id,
@@ -309,6 +309,21 @@ exports.deleteInvoice = async (req, res) => {
     const invoice = await Invoice.findByIdAndDelete(req.params.id);
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     res.json({ message: 'Invoice deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateTransportDetails = async (req, res) => {
+  try {
+    const { transportCharges, transportStatus } = req.body;
+    const invoice = await Invoice.findByIdAndUpdate(
+      req.params.id, 
+      { transportCharges: Number(transportCharges), transportStatus }, 
+      { new: true }
+    );
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    res.json(invoice);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
