@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import API from '../api/axiosInstance';
 import Layout from '../components/Layout';
