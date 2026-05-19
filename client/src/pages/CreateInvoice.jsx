@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import API from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
@@ -12,6 +12,7 @@ const GST_RATES = [0, 5, 12, 18, 28];
 export default function CreateInvoice() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
@@ -62,6 +63,36 @@ export default function CreateInvoice() {
       }
     }).catch(() => {});
   }, [user.companyId]);
+
+  useEffect(() => {
+    if (id) {
+      API.get(`/invoices/${id}`).then(res => {
+        const inv = res.data;
+        setForm({
+          isGst: inv.isGst,
+          date: inv.date ? new Date(inv.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          dueDate: inv.dueDate ? new Date(inv.dueDate).toISOString().split('T')[0] : '',
+          gemContractNumber: inv.gemContractNumber || '',
+          customer: inv.customer || { 
+            name: '', address: '', phone: '', gstin: '', state: '', placeOfSupply: '',
+            shippingAddress: '', sameAsBilling: true 
+          },
+          items: inv.items || [{ ...EMPTY_ITEM }],
+          transportCharges: inv.transportCharges || 0,
+          commissionType: inv.commissionType || 'manual',
+          commissionPercentage: inv.commissionPercentage || 0,
+          commission: inv.commission || 0,
+          adjustment: inv.adjustment || 0,
+          notes: inv.notes || '',
+          dispatchAddress: inv.dispatchAddress || '',
+          dispatchState: inv.dispatchState || '',
+          sameAsCompany: inv.sameAsCompany !== undefined ? inv.sameAsCompany : true,
+          invoiceNumber: inv.invoiceNumber
+        });
+        setIsNewCustomer(false);
+      }).catch(console.error);
+    }
+  }, [id]);
 
   const handleCustomerSelect = (val) => {
     if (val === 'NEW') {
@@ -174,10 +205,14 @@ export default function CreateInvoice() {
         totalGst,
         grandTotal,
       };
-      await API.post('/invoices', payload);
+      if (id) {
+        await API.put(`/invoices/${id}`, payload);
+      } else {
+        await API.post('/invoices', payload);
+      }
       navigate('/invoices');
     } catch (err) {
-      alert(err.response?.data?.message || 'Error creating invoice');
+      alert(err.response?.data?.message || (id ? 'Error updating invoice' : 'Error creating invoice'));
     } finally {
       setLoading(false);
     }
@@ -187,8 +222,8 @@ export default function CreateInvoice() {
     <Layout>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Create Invoice</h1>
-          <p className="page-subtitle">Fill in the details below to generate a new invoice</p>
+          <h1 className="page-title">{id ? 'Edit Invoice' : 'Create Invoice'}</h1>
+          <p className="page-subtitle">{id ? `Updating invoice ${form.invoiceNumber || ''}` : 'Fill in the details below to generate a new invoice'}</p>
         </div>
         <div className="gst-toggle">
           <button
@@ -492,7 +527,7 @@ export default function CreateInvoice() {
               <div className="summary-row grand"><span>Grand Total</span><span>₹{grandTotal.toFixed(2)}</span></div>
             </div>
             <button id="submit-invoice-btn" type="submit" className="btn-primary submit-btn" disabled={loading}>
-              {loading ? 'Creating...' : '✅ Create Invoice'}
+              {loading ? (id ? 'Saving...' : 'Creating...') : id ? '💾 Save Changes' : '✅ Create Invoice'}
             </button>
           </div>
         </div>

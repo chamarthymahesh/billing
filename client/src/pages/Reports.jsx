@@ -11,9 +11,16 @@ const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#3b82f6', '#ec4899'];
 export default function Reports() {
   const [stats, setStats] = useState(null);
   const [invoices, setInvoices] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, gstr1, pnl
+  const [activeTab, setActiveTab] = useState('overview'); // overview, commission, gstr1, pnl
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [loading, setLoading] = useState(true);
+  
+  // Commission specific states
+  const [commVendorFilter, setCommVendorFilter] = useState('');
+  const [commMonthFilter, setCommMonthFilter] = useState('');
+  const [commStatusFilter, setCommStatusFilter] = useState('all');
+  const [editCommission, setEditCommission] = useState(null); // { id, commission, commissionStatus, invoiceNumber, customerName }
+  const [viewInvoice, setViewInvoice] = useState(null); // invoice object to view
 
   useEffect(() => {
     loadData();
@@ -75,6 +82,31 @@ export default function Reports() {
     return acc;
   }, []);
 
+  const commissionInvoices = useMemo(() => {
+    return invoices.filter(inv => {
+      if (!(inv.commission > 0)) return false;
+      if (commVendorFilter && !inv.customer?.name?.toLowerCase().includes(commVendorFilter.toLowerCase())) return false;
+      if (commMonthFilter) {
+        const invMonth = new Date(inv.date).toISOString().substring(0, 7); // "2026-05"
+        if (invMonth !== commMonthFilter) return false;
+      }
+      if (commStatusFilter !== 'all' && (inv.commissionStatus || 'unpaid') !== commStatusFilter) return false;
+      return true;
+    });
+  }, [invoices, commVendorFilter, commMonthFilter, commStatusFilter]);
+
+  const commissionStats = useMemo(() => {
+    let total = 0;
+    let paid = 0;
+    let unpaid = 0;
+    commissionInvoices.forEach(inv => {
+      total += inv.commission || 0;
+      if (inv.commissionStatus === 'paid') paid += inv.commission || 0;
+      else unpaid += inv.commission || 0;
+    });
+    return { total, paid, unpaid };
+  }, [commissionInvoices]);
+
   const summaryStats = stats ? [
     { label: 'Total Revenue', value: `₹${stats.totalSales?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: '💰', color: '#6366f1' },
     { label: 'Total GST Collected', value: `₹${stats.totalGst?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: '🏛️', color: '#10b981' },
@@ -135,6 +167,33 @@ export default function Reports() {
     }
   };
 
+  const handleSaveCommissionDetails = async (e) => {
+    e.preventDefault();
+    try {
+      await API.put(`/invoices/${editCommission.id}/commission-details`, {
+        commission: Number(editCommission.commission || 0),
+        commissionStatus: editCommission.commissionStatus
+      });
+      setEditCommission(null);
+      loadData();
+    } catch (err) {
+      alert('Error updating commission details');
+    }
+  };
+
+  const handleDeleteCommission = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this commission record? This sets the commission for this order to ₹0.')) return;
+    try {
+      await API.put(`/invoices/${id}/commission-details`, {
+        commission: 0,
+        commissionStatus: 'unpaid'
+      });
+      loadData();
+    } catch (err) {
+      alert('Error deleting commission');
+    }
+  };
+
   return (
     <Layout>
       <div className="page-header">
@@ -152,12 +211,14 @@ export default function Reports() {
       {/* Report Tabs */}
       <div className="report-tabs">
         <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>📊 Overview</button>
+        <button className={`tab-btn ${activeTab === 'commission' ? 'active' : ''}`} onClick={() => setActiveTab('commission')}>🤝 Commission Tracker</button>
         <button className={`tab-btn ${activeTab === 'gstr1' ? 'active' : ''}`} onClick={() => setActiveTab('gstr1')}>🏛️ GSTR-1 Report</button>
         <button className={`tab-btn ${activeTab === 'pnl' ? 'active' : ''}`} onClick={() => setActiveTab('pnl')}>💸 Profit & Loss</button>
       </div>
 
       {/* Date Range Filter */}
-      <div className="glass-card filter-bar">
+      {activeTab !== 'commission' && (
+        <div className="glass-card filter-bar">
         <span className="filter-label">Filter by Date:</span>
         <div className="date-range">
           <input id="report-from" type="date" className="input-field" value={dateRange.from}
@@ -168,21 +229,48 @@ export default function Reports() {
           <button className="btn-primary btn-sm" onClick={() => setDateRange({ from: '', to: '' })}>Clear</button>
         </div>
       </div>
+      )}
 
       {loading ? <div className="loading-state">Loading reports...</div> : (
         <>
           {/* Summary Stats */}
-          <div className="stat-grid" style={{ marginBottom: 24 }}>
-            {summaryStats.map(card => (
-              <div key={card.label} className="glass-card stat-card-item" style={{ '--accent-color': card.color }}>
-                <div className="stat-icon-wrap">{card.icon}</div>
+          {activeTab === 'commission' ? (
+            <div className="stat-grid" style={{ marginBottom: 24 }}>
+              <div className="glass-card stat-card-item" style={{ '--accent-color': '#f59e0b' }}>
+                <div className="stat-icon-wrap">🤝</div>
                 <div>
-                  <div className="stat-val">{card.value}</div>
-                  <div className="stat-lbl">{card.label}</div>
+                  <div className="stat-val">₹{commissionStats.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div className="stat-lbl">Total Commission</div>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="glass-card stat-card-item" style={{ '--accent-color': '#10b981' }}>
+                <div className="stat-icon-wrap">✅</div>
+                <div>
+                  <div className="stat-val">₹{commissionStats.paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div className="stat-lbl">Paid Commission</div>
+                </div>
+              </div>
+              <div className="glass-card stat-card-item" style={{ '--accent-color': '#ef4444' }}>
+                <div className="stat-icon-wrap">⏳</div>
+                <div>
+                  <div className="stat-val">₹{commissionStats.unpaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div className="stat-lbl">Pending Commission</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="stat-grid" style={{ marginBottom: 24 }}>
+              {summaryStats.map(card => (
+                <div key={card.label} className="glass-card stat-card-item" style={{ '--accent-color': card.color }}>
+                  <div className="stat-icon-wrap">{card.icon}</div>
+                  <div>
+                    <div className="stat-val">{card.value}</div>
+                    <div className="stat-lbl">{card.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {activeTab === 'overview' && (
             <div className="reports-grid">
@@ -218,6 +306,131 @@ export default function Reports() {
                     </PieChart>
                   </ResponsiveContainer>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'commission' && (
+            <div className="reports-grid-v">
+              {/* Commission Filter Bar */}
+              <div className="glass-card filter-bar commission-filter-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', marginBottom: '24px' }}>
+                <span className="filter-label" style={{ fontWeight: '600', color: '#fff' }}>🔍 Filter Commissions:</span>
+                <div className="date-range" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: 1 }}>
+                  <input
+                    id="comm-vendor-search"
+                    type="text"
+                    placeholder="Filter by Vendor..."
+                    className="input-field"
+                    style={{ flex: 1, minWidth: '180px' }}
+                    value={commVendorFilter}
+                    onChange={e => setCommVendorFilter(e.target.value)}
+                  />
+                  <input
+                    id="comm-month-select"
+                    type="month"
+                    className="input-field"
+                    style={{ flex: 1, minWidth: '150px' }}
+                    value={commMonthFilter}
+                    onChange={e => setCommMonthFilter(e.target.value)}
+                  />
+                  <select
+                    id="comm-status-select"
+                    className="input-field"
+                    style={{ flex: 1, minWidth: '150px' }}
+                    value={commStatusFilter}
+                    onChange={e => setCommStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="paid">Paid</option>
+                    <option value="unpaid">Unpaid</option>
+                  </select>
+                  <button className="btn-primary btn-sm" onClick={() => {
+                    setCommVendorFilter('');
+                    setCommMonthFilter('');
+                    setCommStatusFilter('all');
+                  }}>Clear Filters</button>
+                </div>
+              </div>
+
+              {/* Commission Ledger Table */}
+              <div className="glass-card report-table-card">
+                <h2 className="section-title">Commission Ledger ({commissionInvoices.length} entries)</h2>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Order / Invoice #</th>
+                        <th>Month</th>
+                        <th>Date</th>
+                        <th>Vendor / Party</th>
+                        <th>Commission Amount</th>
+                        <th>Payment Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {commissionInvoices.length === 0 ? (
+                        <tr><td colSpan="7" className="empty-row">No commission records match your filters</td></tr>
+                      ) : commissionInvoices.map(inv => {
+                        const monthStr = new Date(inv.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+                        return (
+                          <tr key={inv._id}>
+                            <td className="inv-num-cell">{inv.invoiceNumber}</td>
+                            <td><strong>{monthStr}</strong></td>
+                            <td>{new Date(inv.date).toLocaleDateString('en-IN')}</td>
+                            <td className="cust-name-cell">👤 {inv.customer?.name || 'N/A'}</td>
+                            <td className="comm-val-cell" style={{ fontWeight: 'bold', color: '#f59e0b' }}>
+                              ₹{(inv.commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td>
+                              <button
+                                className={`comm-status-badge ${inv.commissionStatus || 'unpaid'}`}
+                                onClick={() => handleToggleCommission(inv._id, inv.commissionStatus)}
+                                title="Click to quickly toggle status"
+                              >
+                                {inv.commissionStatus === 'paid' ? '✅ Paid' : '⏳ Unpaid'}
+                              </button>
+                            </td>
+                            <td>
+                              <div className="action-btns" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button
+                                  className="action-btn view"
+                                  style={{ padding: '4px 10px', fontSize: '12px' }}
+                                  onClick={() => setViewInvoice(inv)}
+                                  title="View Invoice & Commission Details"
+                                >
+                                  👁️ View
+                                </button>
+                                <button
+                                  className="action-btn edit"
+                                  style={{ padding: '4px 10px', fontSize: '12px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: '1px solid rgba(99, 102, 241, 0.2)' }}
+                                  onClick={() => setEditCommission({
+                                    id: inv._id,
+                                    commission: inv.commission,
+                                    commissionStatus: inv.commissionStatus || 'unpaid',
+                                    invoiceNumber: inv.invoiceNumber,
+                                    customerName: inv.customer?.name || 'N/A'
+                                  })}
+                                  title="Edit Commission details"
+                                >
+                                  ✏️ Edit
+                                </button>
+                                <button
+                                  className="action-btn delete"
+                                  style={{ padding: '4px 10px', fontSize: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                                  onClick={() => handleDeleteCommission(inv._id)}
+                                  title="Delete/Clear Commission"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -444,6 +657,160 @@ export default function Reports() {
               </div>
             </div>
         </>
+      )}
+
+      {/* Edit Commission Modal */}
+      {editCommission && (
+        <div className="modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div className="glass-card modal-content" style={{ width: '100%', maxWidth: '480px', padding: '24px', position: 'relative', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '20px', fontWeight: '600', color: '#fff', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px' }}>✏️ Edit Commission Details</h3>
+            <form onSubmit={handleSaveCommissionDetails}>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Order / Invoice No</label>
+                <input type="text" className="input-field" value={editCommission.invoiceNumber} disabled style={{ opacity: 0.7, cursor: 'not-allowed' }} />
+              </div>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Vendor / Customer Name</label>
+                <input type="text" className="input-field" value={editCommission.customerName} disabled style={{ opacity: 0.7, cursor: 'not-allowed' }} />
+              </div>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Commission Amount (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  required
+                  value={editCommission.commission}
+                  onChange={e => setEditCommission(prev => ({ ...prev, commission: e.target.value }))}
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#94a3b8' }}>Payment Status</label>
+                <select
+                  className="input-field"
+                  value={editCommission.commissionStatus}
+                  onChange={e => setEditCommission(prev => ({ ...prev, commissionStatus: e.target.value }))}
+                >
+                  <option value="unpaid">⏳ Unpaid / Pending</option>
+                  <option value="paid">✅ Paid</option>
+                </select>
+              </div>
+              <div className="modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn-secondary" onClick={() => setEditCommission(null)}>Cancel</button>
+                <button type="submit" className="btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Invoice & Commission Details Modal */}
+      {viewInvoice && (
+        <div className="modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div className="glass-card modal-content" style={{ width: '100%', maxWidth: '720px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#fff' }}>👁️ Order Details - {viewInvoice.invoiceNumber}</h3>
+              <button onClick={() => setViewInvoice(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <h4 style={{ margin: '0 0 8px', color: '#6366f1', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vendor / Customer</h4>
+                <p style={{ margin: '0 0 4px', fontWeight: '600' }}>{viewInvoice.customer?.name}</p>
+                <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#94a3b8' }}>{viewInvoice.customer?.address}</p>
+                <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#94a3b8' }}>Phone: {viewInvoice.customer?.phone}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <h4 style={{ margin: '0 0 8px', color: '#6366f1', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Metadata</h4>
+                <p style={{ margin: '0 0 4px' }}>Date: <strong>{new Date(viewInvoice.date).toLocaleDateString('en-IN')}</strong></p>
+                <p style={{ margin: '0 0 4px' }}>GST Mode: <strong>{viewInvoice.isGst ? 'TAX INVOICE' : 'NON-GST INVOICE'}</strong></p>
+                <p style={{ margin: '0 0 4px' }}>Invoice Status: <span className={`status-tag status-${viewInvoice.status}`} style={{ display: 'inline-block', fontSize: '11px', padding: '2px 8px' }}>{viewInvoice.status.toUpperCase()}</span></p>
+              </div>
+            </div>
+
+            <h4 style={{ margin: '0 0 8px', color: '#6366f1', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items List</h4>
+            <div className="table-wrap" style={{ marginBottom: '20px' }}>
+              <table className="data-table" style={{ fontSize: '13px' }}>
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    {viewInvoice.isGst && <th>GST</th>}
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewInvoice.items?.map((item, idx) => (
+                    <tr key={idx}>
+                      <td>{item.description}</td>
+                      <td>{item.quantity}</td>
+                      <td>₹{Number(item.rate).toFixed(2)}</td>
+                      {viewInvoice.isGst && <td>{item.gstRate}%</td>}
+                      <td>₹{Number(item.total).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+              <div style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px dashed rgba(245, 158, 11, 0.2)', borderRadius: '8px', padding: '12px' }}>
+                <h4 style={{ margin: '0 0 8px', color: '#f59e0b', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>🤝 Commission Information</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '13px' }}>
+                  <span>Recorded Amount:</span>
+                  <strong style={{ color: '#f59e0b' }}>₹{(viewInvoice.commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                  <span>Payout Status:</span>
+                  <span className={`comm-status-badge ${viewInvoice.commissionStatus || 'unpaid'}`} style={{ margin: 0 }}>
+                    {viewInvoice.commissionStatus === 'paid' ? '✅ Paid' : '⏳ Unpaid'}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Subtotal:</span>
+                  <span>₹{viewInvoice.subTotal?.toFixed(2)}</span>
+                </div>
+                {viewInvoice.isGst && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>GST Collected:</span>
+                    <span>₹{viewInvoice.totalGst?.toFixed(2)}</span>
+                  </div>
+                )}
+                {viewInvoice.transportCharges > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Transport Charges:</span>
+                    <span>₹{viewInvoice.transportCharges?.toFixed(2)}</span>
+                  </div>
+                )}
+                {viewInvoice.adjustment !== 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Adjustment:</span>
+                    <span>₹{viewInvoice.adjustment?.toFixed(2)}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '4px', color: '#fff' }}>
+                  <span>Grand Total:</span>
+                  <span>₹{viewInvoice.grandTotal?.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button className="btn-secondary" onClick={() => setViewInvoice(null)}>Close</button>
+            </div>
+          </div>
+        </div>
       )}
     </Layout>
   );
