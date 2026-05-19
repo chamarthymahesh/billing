@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import './CreateInvoice.css';
 
-const EMPTY_ITEM = { description: '', hsnCode: '', quantity: 1, rate: 0, gstRate: 18 };
+const EMPTY_ITEM = { productId: '', description: '', hsnCode: '', quantity: 1, rate: 0, gstRate: 18 };
 const GST_RATES = [0, 5, 12, 18, 28];
 
 export default function CreateInvoice() {
@@ -166,6 +166,7 @@ export default function CreateInvoice() {
       const items = [...form.items];
       items[idx] = {
         ...items[idx],
+        productId: p._id,
         description: p.name,
         rate: p.price,
         gstRate: p.gstRate,
@@ -392,6 +393,7 @@ export default function CreateInvoice() {
                     <tr key={idx}>
                       <td>
                         <select className="input-field item-input sm"
+                          value={item.productId || ''}
                           onChange={e => fillFromProduct(idx, e.target.value)}>
                           <option value="">Select...</option>
                           {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}

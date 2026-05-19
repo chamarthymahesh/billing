@@ -9,38 +9,42 @@ const calculateNetInvoiceProfit = (inv, purchases) => {
       (p.productId && item.productId && p.productId.toString() === item.productId.toString())
     );
 
-    let itemPurchaseCost = 0;
+    let purchaseBase = 0;
+    let purchaseGst = 0;
+    
     if (matchedPurchase && matchedPurchase.quantity > 0) {
-      // Landed cost including GST, packaging, transport and misc
-      const totalPurchaseCostWithCharges = matchedPurchase.totalAmount + 
-        (matchedPurchase.packagingCharges || 0) + 
-        (matchedPurchase.transportCharges || 0) + 
-        (matchedPurchase.miscCharges || 0);
-      const purchasePricePerUnit = totalPurchaseCostWithCharges / matchedPurchase.quantity;
-      itemPurchaseCost = purchasePricePerUnit * item.quantity;
+      // Calculate unit base and unit GST from purchase
+      const unitBase = matchedPurchase.subTotal / matchedPurchase.quantity;
+      const unitGst = (matchedPurchase.totalGst || 0) / matchedPurchase.quantity;
+      
+      const otherCharges = (matchedPurchase.packagingCharges || 0) + 
+                           (matchedPurchase.transportCharges || 0) + 
+                           (matchedPurchase.miscCharges || 0);
+      const unitOther = otherCharges / matchedPurchase.quantity;
+      
+      purchaseBase = (unitBase + unitOther) * item.quantity;
+      purchaseGst = unitGst * item.quantity;
     } else {
-      // Fallback to catalog price
-      const basePrice = item.purchasePrice || 0;
-      const gstAmt = item.isGst ? (basePrice * (item.gstRate || 0)) / 100 : 0;
-      itemPurchaseCost = (basePrice + gstAmt) * item.quantity;
+      purchaseBase = (item.purchasePrice || 0) * item.quantity;
+      purchaseGst = item.isGst ? (purchaseBase * (item.gstRate || 0)) / 100 : 0;
     }
 
-    // 2. Selling total for this item (with GST)
-    const sellingItemTotal = item.total || (item.amount + (item.isGst ? (item.amount * (item.gstRate || 0)) / 100 : 0));
+    const sellingBase = item.amount || (item.quantity * item.rate);
+    const sellingGst = item.isGst ? (sellingBase * (item.gstRate || 0)) / 100 : 0;
 
-    // 3. Item Gross Profit
-    const itemGrossProfit = sellingItemTotal - itemPurchaseCost;
+    const sellingTotal = sellingBase + sellingGst;
+    const purchaseTotal = purchaseBase + purchaseGst;
 
-    // 4. Profit on GST
-    const itemProfitOnGst = item.isGst ? itemGrossProfit * ((item.gstRate || 0) / 100) : 0;
+    const grossProfit = sellingTotal - purchaseTotal;
+    const gstDifference = sellingGst - purchaseGst;
 
-    // 5. Item Net Profit before invoice-level charges
-    const itemNetProfit = itemGrossProfit - itemProfitOnGst;
+    // Net Profit = Gross Profit - GST Difference
+    const itemNetProfit = grossProfit - gstDifference;
 
     return sum + itemNetProfit;
   }, 0);
 
-  // 6. Subtract invoice-level commissions, transport charges, and other adjustments
+  // Subtract invoice-level commissions and transport charges
   return itemProfitsSum - (inv.commission || 0) - (inv.transportCharges || 0);
 };
 

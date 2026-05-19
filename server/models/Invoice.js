@@ -17,6 +17,7 @@ const invoiceSchema = new mongoose.Schema({
     sameAsBilling: { type: Boolean, default: true }
   },
   items: [{
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     description: String,
     hsnCode: String,
     quantity: Number,

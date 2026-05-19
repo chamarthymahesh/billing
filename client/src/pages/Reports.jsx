@@ -147,7 +147,7 @@ export default function Reports() {
   ] : [];
 
   const exportCSV = () => {
-    const headers = ['Invoice#', 'Date', 'Customer', 'Type', 'Subtotal', 'GST', 'Transport', 'Commission', 'Total', 'Status'];
+    const headers = ['Invoice#', 'Date', 'Customer', 'Type', 'Subtotal', 'GST', 'Transport', 'Commission', 'Total Profit', 'Grand Total', 'Status'];
     const rows = filteredInvoices.map(inv => [
       inv.invoiceNumber,
       new Date(inv.date).toLocaleDateString('en-IN'),
@@ -287,6 +287,7 @@ export default function Reports() {
         <button className={`tab-btn ${activeTab === 'transport' ? 'active' : ''}`} onClick={() => setActiveTab('transport')}>🚚 Transport Tracker</button>
         <button className={`tab-btn ${activeTab === 'gstr1' ? 'active' : ''}`} onClick={() => setActiveTab('gstr1')}>🏛️ GSTR-1 Report</button>
         <button className={`tab-btn ${activeTab === 'pnl' ? 'active' : ''}`} onClick={() => setActiveTab('pnl')}>💸 Profit & Loss</button>
+        <button className={`tab-btn ${activeTab === 'invoice-profits' ? 'active' : ''}`} onClick={() => setActiveTab('invoice-profits')}>📈 Invoice Profits</button>
       </div>
 
       {/* Date Range Filter */}
@@ -403,6 +404,55 @@ export default function Reports() {
                     </PieChart>
                   </ResponsiveContainer>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'invoice-profits' && (
+            <div className="reports-grid-v">
+              <div className="glass-card report-table-card">
+                <h2 className="section-title">Invoice-wise Net Profit ({filteredInvoices.length} invoices)</h2>
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Invoice #</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Total Revenue</th>
+                        <th>Cost & Deductions</th>
+                        <th>Net Profit</th>
+                        <th>Margin %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInvoices.length === 0 ? (
+                        <tr><td colSpan="7" className="empty-row">No invoices found for the selected range</td></tr>
+                      ) : filteredInvoices.map(inv => {
+                        const profit = inv.totalProfit || 0;
+                        const revenue = inv.grandTotal || 0;
+                        const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : 0;
+                        const deductions = revenue - profit;
+                        
+                        return (
+                          <tr key={inv._id}>
+                            <td className="inv-num-cell">{inv.invoiceNumber}</td>
+                            <td>{new Date(inv.date).toLocaleDateString('en-IN')}</td>
+                            <td className="cust-name-cell">👤 {inv.customer?.name || 'N/A'}</td>
+                            <td style={{ color: '#10b981' }}>₹{revenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td style={{ color: '#ef4444' }}>₹{deductions.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td style={{ fontWeight: 'bold', color: profit >= 0 ? '#10b981' : '#ef4444' }}>
+                              ₹{profit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td>
+                              <span className={`badge ${profit >= 0 ? 'paid' : 'unpaid'}`}>{margin}%</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
