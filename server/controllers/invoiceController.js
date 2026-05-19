@@ -81,7 +81,7 @@ exports.createInvoice = async (req, res) => {
 exports.getInvoices = async (req, res) => {
   try {
     const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
-    const invoices = await Invoice.find(filter).populate('companyId', 'name');
+    const invoices = await Invoice.find(filter).populate('companyId', 'name').sort({ date: -1, createdAt: -1 });
     res.json(invoices);
   } catch (error) {
     console.error('GET_INVOICES_ERROR:', error);

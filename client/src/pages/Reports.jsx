@@ -707,12 +707,12 @@ export default function Reports() {
                     </thead>
                     <tbody>
                       {Object.values(stats?.gstr1?.hsnSummary || {}).length === 0 ? <tr><td colSpan="4" className="empty-row">No data</td></tr> :
-                        Object.values(stats.gstr1.hsnSummary).map((row, i) => (
+                        Object.values(stats?.gstr1?.hsnSummary || {}).map((row, i) => (
                           <tr key={i}>
                             <td>{row.hsn}</td>
                             <td>{row.qty}</td>
-                            <td>₹{row.taxable.toLocaleString('en-IN')}</td>
-                            <td>₹{row.tax.toLocaleString('en-IN')}</td>
+                            <td>₹{row.taxable?.toLocaleString('en-IN') || '0.00'}</td>
+                            <td>₹{row.tax?.toLocaleString('en-IN') || '0.00'}</td>
                           </tr>
                         ))
                       }
@@ -782,8 +782,8 @@ export default function Reports() {
                           <td className="comm-val-cell">₹{item.total.toLocaleString('en-IN')}</td>
                           <td>
                             <div className="progress-bar-wrap">
-                              <div className="progress-bar-fill" style={{ width: `${(item.total / (stats.totalCommission || 1)) * 100}%` }}></div>
-                              <span className="percent-label">{((item.total / (stats.totalCommission || 1)) * 100).toFixed(1)}%</span>
+                              <div className="progress-bar-fill" style={{ width: `${(item.total / (stats?.totalCommission || 1)) * 100}%` }}></div>
+                              <span className="percent-label">{((item.total / (stats?.totalCommission || 1)) * 100).toFixed(1)}%</span>
                             </div>
                           </td>
                         </tr>
@@ -865,11 +865,11 @@ export default function Reports() {
                         <td className="grand-total">₹{inv.grandTotal?.toLocaleString('en-IN')}</td>
                         <td>
                           <button 
-                            className={`badge badge-${inv.status}`} 
-                            onClick={() => handleToggleStatus(inv._id, inv.status)}
+                            className={`badge badge-${inv.status || 'unpaid'}`} 
+                            onClick={() => handleToggleStatus(inv._id, inv.status || 'unpaid')}
                             title="Click to toggle status: Unpaid -> Partially -> Paid"
                           >
-                            {inv.status.replace('_', ' ')}
+                            {(inv.status || 'unpaid').replace('_', ' ')}
                           </button>
                         </td>
                       </tr>

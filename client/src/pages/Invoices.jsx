@@ -134,11 +134,11 @@ export default function Invoices() {
                       </td>
                       <td>
                         <div className="action-btns" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                          <Link to={`/invoices/${inv._id}`} className="action-btn view" style={{ padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} title="View Invoice">👁️ View</Link>
+                          <Link to={`/invoices/${inv._id}`} className="action-btn view" style={{ padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} title="View Invoice">👁️</Link>
                           {user?.role === 'companyadmin' && (
                             <>
-                              <Link to={`/invoices/edit/${inv._id}`} className="action-btn edit" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: '1px solid rgba(99, 102, 241, 0.2)', textDecoration: 'none', padding: '4px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', fontSize: '12px' }} title="Edit Invoice">✏️ Edit</Link>
-                              <button onClick={() => handleDeleteInvoice(inv._id)} className="action-btn delete" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '12px' }} title="Delete Invoice">🗑️ Delete</button>
+                              <Link to={`/invoices/edit/${inv._id}`} className="action-btn edit" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: '1px solid rgba(99, 102, 241, 0.2)', textDecoration: 'none', padding: '4px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', fontSize: '12px' }} title="Edit Invoice">✏️</Link>
+                              <button onClick={() => handleDeleteInvoice(inv._id)} className="action-btn delete" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '12px' }} title="Delete Invoice">🗑️</button>
                             </>
                           )}
                         </div>
