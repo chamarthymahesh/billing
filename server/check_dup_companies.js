@@ -1,0 +1,1 @@
+const mongoose = require('mongoose'); require('dotenv').config(); const Company = require('./models/Company'); mongoose.connect(process.env.MONGO_URI).then(async () => { const companies = await Company.find({}); console.log(JSON.stringify(companies.map(c => ({id: c._id, name: c.name})), null, 2)); mongoose.disconnect(); }).catch(console.error);

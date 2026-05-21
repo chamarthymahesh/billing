@@ -1,0 +1,53 @@
+{
+  "_id": "6a0e8b690e3563782556a7d2",
+  "invoiceNumber": "INV/26-27/001",
+  "date": "2026-05-21T00:00:00.000Z",
+  "dueDate": null,
+  "gemContractNumber": "GEMC-511687742567926",
+  "companyId": "6a0c0ae55777d1547374d054",
+  "customer": {
+    "name": "Navodaya leadership institute",
+    "address": "Navodaya leadership institute nallagandla road, p.o. gopanpally mandal sherilingampally, hyderabad\n\n",
+    "phone": "",
+    "gstin": "36HYDN01686G1D2",
+    "state": "TELANGANA",
+    "placeOfSupply": "TELANGANA",
+    "shippingAddress": "Navodaya leadership institute nallagandla road, p.o. gopanpally mandal sherilingampally, hyderabad\n\n",
+    "sameAsBilling": true
+  },
+  "items": [
+    {
+      "productId": "6a0e8a3a0e3563782556a7b8",
+      "description": "ENAMEL 10 LTR ",
+      "hsnCode": "3209",
+      "quantity": 1,
+      "rate": 2627.1186,
+      "purchasePrice": 0,
+      "profit": 2627.1186,
+      "gstRate": 18,
+      "amount": 2627.1186,
+      "cgst": 0,
+      "sgst": 0,
+      "igst": 472.881348,
+      "total": 3099.9999479999997,
+      "_id": "6a0e8b690e3563782556a7d3"
+    }
+  ],
+  "subTotal": 2627.1186,
+  "totalGst": 472.881348,
+  "transportCharges": 0,
+  "transportStatus": "unpaid",
+  "commission": 0,
+  "commissionStatus": "unpaid",
+  "adjustment": 0,
+  "grandTotal": 3099.9999479999997,
+  "totalProfit": 2627.1186,
+  "isGst": true,
+  "status": "unpaid",
+  "notes": "1. Goods once sold will not be taken back.\n2. Interest @18% p.a. will be charged if payment is not made within due date.",
+  "dispatchAddress": "",
+  "dispatchState": "",
+  "createdAt": "2026-05-21T04:34:49.323Z",
+  "updatedAt": "2026-05-21T04:34:49.323Z",
+  "__v": 0
+}

@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema({
   mrp: { type: Number, default: 0 },
   gstRate: { type: Number, default: 0 },
   minStockLevel: { type: Number, default: 0 },
-  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', default: null },
   stock: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });

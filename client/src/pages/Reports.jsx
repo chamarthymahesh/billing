@@ -382,7 +382,7 @@ export default function Reports() {
                       <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} />
                       <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
                       <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                        formatter={v => [`₹${v.toLocaleString('en-IN')}`, '']} />
+                        formatter={v => [`₹${v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, '']} />
                       <Legend />
                       <Bar dataKey="sales" name="Total Sales" fill="#6366f1" radius={[4,4,0,0]} />
                       <Bar dataKey="gst" name="GST Collected" fill="#10b981" radius={[4,4,0,0]} />
@@ -734,8 +734,8 @@ export default function Reports() {
                             <td>{row.gstin}</td>
                             <td>{row.name}</td>
                             <td>{row.invoiceNo}</td>
-                            <td>₹{row.taxableValue.toLocaleString('en-IN')}</td>
-                            <td>₹{row.totalGst.toLocaleString('en-IN')}</td>
+                            <td>₹{row.taxableValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td>₹{row.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td>{row.state}</td>
                           </tr>
                         ))
@@ -764,8 +764,8 @@ export default function Reports() {
                           <tr key={i}>
                             <td>{row.hsn}</td>
                             <td>{row.qty}</td>
-                            <td>₹{row.taxable?.toLocaleString('en-IN') || '0.00'}</td>
-                            <td>₹{row.tax?.toLocaleString('en-IN') || '0.00'}</td>
+                            <td>₹{row.taxable?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</td>
+                            <td>₹{row.tax?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</td>
                           </tr>
                         ))
                       }
@@ -783,24 +783,24 @@ export default function Reports() {
                 <div className="pnl-rows">
                   <div className="pnl-row income">
                     <span>Revenue from Sales (A)</span>
-                    <span className="val">₹{stats?.totalSales?.toLocaleString('en-IN')}</span>
+                    <span className="val">₹{stats?.totalSales?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="pnl-row expense">
                     <span>Purchase of Goods (B)</span>
-                    <span className="val">₹{stats?.totalPurchases?.toLocaleString('en-IN')}</span>
+                    <span className="val">₹{stats?.totalPurchases?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="pnl-row expense">
                     <span>Commission Paid (C)</span>
-                    <span className="val">₹{stats?.totalCommission?.toLocaleString('en-IN')}</span>
+                    <span className="val">₹{stats?.totalCommission?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="pnl-row expense">
                     <span>Transport/Shipping (D)</span>
-                    <span className="val">₹{stats?.totalTransport?.toLocaleString('en-IN')}</span>
+                    <span className="val">₹{stats?.totalTransport?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="pnl-divider"></div>
                   <div className={`pnl-row total ${(stats?.totalSales - stats?.totalPurchases - stats?.totalCommission - stats?.totalTransport) >= 0 ? 'profit' : 'loss'}`}>
                     <span>Net Profit / (Loss) (A - B - C - D)</span>
-                    <span className="val">₹{(stats?.totalSales - stats?.totalPurchases - stats?.totalCommission - stats?.totalTransport).toLocaleString('en-IN')}</span>
+                    <span className="val">₹{(stats?.totalSales - stats?.totalPurchases - stats?.totalCommission - stats?.totalTransport).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
                 <div className="pnl-info">
@@ -814,7 +814,7 @@ export default function Reports() {
             <div className="glass-card report-table-card" style={{ gridColumn: '1/-1' }}>
               <div className="card-header-flex">
                 <h2 className="section-title">Customer-wise Commission Report</h2>
-                <div className="commission-total">Total Commission: ₹{stats?.totalCommission?.toLocaleString('en-IN')}</div>
+                <div className="commission-total">Total Commission: ₹{stats?.totalCommission?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               </div>
               <div className="report-row-flex">
                 <div className="commission-table-wrap">
@@ -832,7 +832,7 @@ export default function Reports() {
                       ) : stats?.customerCommissionList?.map((item, idx) => (
                         <tr key={idx}>
                           <td className="cust-name-cell">👤 {item.name}</td>
-                          <td className="comm-val-cell">₹{item.total.toLocaleString('en-IN')}</td>
+                          <td className="comm-val-cell">₹{item.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           <td>
                             <div className="progress-bar-wrap">
                               <div className="progress-bar-fill" style={{ width: `${(item.total / (stats?.totalCommission || 1)) * 100}%` }}></div>
@@ -858,7 +858,7 @@ export default function Reports() {
                       >
                         {(stats?.customerCommissionList || []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip formatter={v => `₹${v.toLocaleString('en-IN')}`} />
+                      <Tooltip formatter={v => `₹${v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                       <Legend verticalAlign="bottom" height={36}/>
                     </PieChart>
                   </ResponsiveContainer>
@@ -895,12 +895,12 @@ export default function Reports() {
                         <td>{new Date(inv.date).toLocaleDateString('en-IN')}</td>
                         <td>{inv.customer?.name}</td>
                         <td><span className={`type-badge ${inv.isGst ? 'gst' : 'nongst'}`}>{inv.isGst ? 'GST' : 'Non-GST'}</span></td>
-                        <td>₹{inv.subTotal?.toLocaleString('en-IN')}</td>
-                        <td>₹{(inv.totalGst || 0).toLocaleString('en-IN')}</td>
-                        <td>₹{(inv.transportCharges || 0).toLocaleString('en-IN')}</td>
+                        <td>₹{inv.subTotal?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>₹{(inv.totalGst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>₹{(inv.transportCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>
                           <div className="commission-cell">
-                            <span>₹{(inv.commission || 0).toLocaleString('en-IN')}</span>
+                            <span>₹{(inv.commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             {inv.commission > 0 && (
                               <button 
                                 className={`comm-status-badge ${inv.commissionStatus || 'unpaid'}`}
@@ -913,9 +913,9 @@ export default function Reports() {
                           </div>
                         </td>
                         <td style={{ color: '#10b981', fontWeight: 'bold' }}>
-                          ₹{(inv.totalProfit || 0).toLocaleString('en-IN')}
+                          ₹{(inv.totalProfit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
-                        <td className="grand-total">₹{inv.grandTotal?.toLocaleString('en-IN')}</td>
+                        <td className="grand-total">₹{inv.grandTotal?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>
                           <button 
                             className={`badge badge-${inv.status || 'unpaid'}`} 

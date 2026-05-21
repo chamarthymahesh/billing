@@ -40,6 +40,15 @@ export default function Invoices() {
     }
   };
 
+  const updateDeliveryStatus = async (id, status) => {
+    try {
+      await API.put(`/invoices/${id}/delivery-status`, { materialDeliveryStatus: status });
+      setInvoices(prev => prev.map(i => i._id === id ? { ...i, materialDeliveryStatus: status } : i));
+    } catch (err) {
+      alert('Error updating delivery status');
+    }
+  };
+
   const handleDeleteInvoice = async (id) => {
     if (!window.confirm('Are you sure you want to permanently delete this invoice? This action cannot be undone.')) return;
     try {
@@ -97,12 +106,13 @@ export default function Invoices() {
                   <th>Transport</th>
                   <th>Total</th>
                   <th>Status</th>
+                  <th>Delivery Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="10" className="empty-row">No invoices found</td></tr>
+                  <tr><td colSpan="11" className="empty-row">No invoices found</td></tr>
                 ) : filtered.map(inv => {
                   if (!inv) return null;
                   return (
@@ -111,10 +121,10 @@ export default function Invoices() {
                       <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-IN') : 'N/A'}</td>
                       <td>{inv.customer?.name || 'N/A'}</td>
                       <td><span className={`type-badge ${inv.isGst ? 'gst' : 'nongst'}`}>{inv.isGst ? 'GST' : 'Non-GST'}</span></td>
-                      <td>₹{(inv.subTotal || 0).toLocaleString('en-IN')}</td>
-                      <td>₹{(inv.totalGst || 0).toLocaleString('en-IN')}</td>
-                      <td>₹{(inv.transportCharges || 0).toLocaleString('en-IN')}</td>
-                      <td className="grand-total">₹{(inv.grandTotal || 0).toLocaleString('en-IN')}</td>
+                      <td>₹{(inv.subTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td>₹{(inv.totalGst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td>₹{(inv.transportCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="grand-total">₹{(inv.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td>
                         {user?.role === 'companyadmin' ? (
                           <select
@@ -129,6 +139,43 @@ export default function Invoices() {
                         ) : (
                           <span className={`status-tag status-${inv.status || 'unpaid'}`}>
                             {(inv.status || 'unpaid').toUpperCase()}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {user?.role === 'companyadmin' ? (
+                          <select
+                            className="status-select"
+                            style={{ 
+                              background: inv.materialDeliveryStatus === 'Delivered' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
+                              color: inv.materialDeliveryStatus === 'Delivered' ? '#10b981' : '#f59e0b',
+                              border: inv.materialDeliveryStatus === 'Delivered' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)',
+                              padding: '4px',
+                              borderRadius: '4px',
+                              fontWeight: 'bold',
+                              cursor: 'pointer'
+                            }}
+                            value={inv.materialDeliveryStatus || 'Pending'}
+                            onChange={e => updateDeliveryStatus(inv._id, e.target.value)}
+                          >
+                            <option value="Pending">⏳ Pending</option>
+                            <option value="Delivered">✅ Delivered</option>
+                          </select>
+                        ) : (
+                          <span 
+                            className={`badge`}
+                            style={{ 
+                              background: inv.materialDeliveryStatus === 'Delivered' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
+                              color: inv.materialDeliveryStatus === 'Delivered' ? '#10b981' : '#f59e0b',
+                              border: inv.materialDeliveryStatus === 'Delivered' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontWeight: 'bold',
+                              fontSize: '11px',
+                              display: 'inline-block'
+                            }}
+                          >
+                            {inv.materialDeliveryStatus || 'Pending'}
                           </span>
                         )}
                       </td>

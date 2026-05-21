@@ -174,14 +174,14 @@ export default function AdminReports() {
           <div className="glass-card stat-card-item" style={{ '--accent-color': '#6366f1' }}>
             <div className="stat-icon-wrap">💰</div>
             <div>
-              <div className="stat-val">₹{totalGlobalSales.toLocaleString('en-IN')}</div>
+              <div className="stat-val">₹{totalGlobalSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               <div className="stat-lbl">Global Revenue (All Companies)</div>
             </div>
           </div>
           <div className="glass-card stat-card-item" style={{ '--accent-color': '#10b981' }}>
             <div className="stat-icon-wrap">🏛️</div>
             <div>
-              <div className="stat-val">₹{totalGlobalGst.toLocaleString('en-IN')}</div>
+              <div className="stat-val">₹{totalGlobalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               <div className="stat-lbl">Total GST Collection</div>
             </div>
           </div>
@@ -216,8 +216,8 @@ export default function AdminReports() {
                         <td className="company-name-cell">🏢 {row.name}</td>
                         <td><span className="gstin-val">{row.gstin || 'Non-GST'}</span></td>
                         <td className="count-cell">{row.invoiceCount}</td>
-                        <td className="val-cell">₹{row.totalSales.toLocaleString('en-IN')}</td>
-                        <td className="val-cell gst">₹{row.totalGst.toLocaleString('en-IN')}</td>
+                        <td className="val-cell">₹{row.totalSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="val-cell gst">₹{row.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td><span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span></td>
                       </tr>
                     ))

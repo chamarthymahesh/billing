@@ -59,20 +59,38 @@ export default function AdminInvoices() {
                   <th>Customer</th>
                   <th>Total</th>
                   <th>Status</th>
+                  <th>Delivery Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredInvoices.length === 0 ? (
-                  <tr><td colSpan="7" className="empty-row">No invoices found</td></tr>
+                  <tr><td colSpan="8" className="empty-row">No invoices found</td></tr>
                 ) : filteredInvoices.map(inv => (
                   <tr key={inv._id}>
                     <td>{inv.invoiceNumber}</td>
                     <td><span className="badge badge-gst">{inv.companyId?.name || 'N/A'}</span></td>
                     <td>{new Date(inv.date).toLocaleDateString('en-IN')}</td>
                     <td>{inv.customer?.name}</td>
-                    <td className="price-cell">₹{inv.grandTotal.toLocaleString('en-IN')}</td>
+                    <td className="price-cell">₹{inv.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td><span className={`badge badge-${inv.status || 'unpaid'}`}>{inv.status || 'unpaid'}</span></td>
+                    <td>
+                      <span 
+                        className={`badge`}
+                        style={{ 
+                          background: inv.materialDeliveryStatus === 'Delivered' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
+                          color: inv.materialDeliveryStatus === 'Delivered' ? '#10b981' : '#f59e0b',
+                          border: inv.materialDeliveryStatus === 'Delivered' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                          fontSize: '11px',
+                          display: 'inline-block'
+                        }}
+                      >
+                        {inv.materialDeliveryStatus || 'Pending'}
+                      </span>
+                    </td>
                     <td>
                       <Link to={`/invoices/${inv._id}`} className="action-btn-icon view" title="View Detail">👁</Link>
                     </td>

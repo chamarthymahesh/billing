@@ -79,7 +79,7 @@ export default function Dashboard() {
                   <YAxis stroke="#94a3b8" />
                   <Tooltip
                     contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                    formatter={(v) => [`₹${v.toLocaleString('en-IN')}`, '']}
+                    formatter={(v) => [`₹${v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, '']}
                   />
                   <Bar dataKey="value" fill="#6366f1" radius={[6,6,0,0]} />
                 </BarChart>
@@ -105,7 +105,7 @@ export default function Dashboard() {
                       <tr key={inv._id}>
                         <td className="inv-num">{inv.invoiceNumber}</td>
                         <td>{inv.customer?.name}</td>
-                        <td>₹{inv.grandTotal?.toLocaleString('en-IN')}</td>
+                        <td>₹{inv.grandTotal?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>
                           <span className={`badge badge-${inv.status}`}>{inv.status}</span>
                         </td>

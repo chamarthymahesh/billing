@@ -2,13 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import API from '../api/axiosInstance';
 import Layout from '../components/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import './Purchases.css';
 
 const EMPTY_ITEM = { productId: '', quantity: 1, rate: 0, gstRate: 18, isGst: true };
 
 export default function Purchases() {
+  const { user } = useAuth();
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -16,6 +19,7 @@ export default function Purchases() {
   const [viewBillNo, setViewBillNo] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    companyId: '',
     supplierName: '',
     supplierGstin: '',
     billNumber: '',
@@ -48,10 +52,22 @@ export default function Purchases() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const { data } = await API.get('/companies');
+      setCompanies(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchPurchases();
     fetchProducts();
-  }, []);
+    if (user?.role === 'superadmin') {
+      fetchCompanies();
+    }
+  }, [user]);
 
   const supplierSuggestions = useMemo(() => {
     const suggestions = [];
@@ -129,11 +145,16 @@ export default function Purchases() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (user.role === 'superadmin' && !form.companyId) {
+      alert("Please select a target company");
+      return;
+    }
     setSaving(true);
     try {
       const promises = form.items.map(item => {
         if (!item.productId) throw new Error("Please select a product for all items");
         const payload = {
+          companyId: user.role === 'superadmin' ? form.companyId : undefined,
           supplierName: form.supplierName,
           supplierGstin: form.supplierGstin,
           billNumber: form.billNumber,
@@ -155,6 +176,7 @@ export default function Purchases() {
       setShowForm(false);
       fetchPurchases();
       setForm({
+        companyId: '',
         supplierName: '', supplierGstin: '', billNumber: '',
         purchaseDate: new Date().toISOString().split('T')[0],
         paymentStatus: 'Pending',
@@ -172,12 +194,17 @@ export default function Purchases() {
 
   const handleEditSave = async (e) => {
     e.preventDefault();
+    if (user.role === 'superadmin' && !editForm.companyId) {
+      alert("Please select a target company");
+      return;
+    }
     setSaving(true);
     try {
       for (const item of editForm.items) {
         if (!item.productId) throw new Error("Please select a product for all items");
       }
       const payload = {
+        companyId: user.role === 'superadmin' ? editForm.companyId : undefined,
         supplierName: editForm.supplierName,
         supplierGstin: editForm.supplierGstin,
         billNumber: editForm.billNumber,
@@ -206,6 +233,7 @@ export default function Purchases() {
 
   const openEdit = (billGroup) => {
     setEditForm({
+      companyId: billGroup.items[0]?.companyId?._id || billGroup.items[0]?.companyId || '',
       oldBillNumber: billGroup.billNumber,
       supplierName: billGroup.supplierName,
       supplierGstin: billGroup.items[0]?.supplierGstin || '',
@@ -226,10 +254,12 @@ export default function Purchases() {
     setShowEditModal(true);
   };
 
-  const handleDeleteBill = async (billNumber) => {
+  const handleDeleteBill = async (billNumber, billGroup) => {
     if (!window.confirm('Are you sure you want to delete this entire bill? This will reduce the product stock for all items.')) return;
     try {
-      await API.delete(`/purchases/bill/${encodeURIComponent(billNumber)}`);
+      const compId = user.role === 'superadmin' ? (billGroup?.items?.[0]?.companyId?._id || billGroup?.items?.[0]?.companyId) : '';
+      const queryStr = compId ? `?companyId=${encodeURIComponent(compId)}` : '';
+      await API.delete(`/purchases/bill/${encodeURIComponent(billNumber)}${queryStr}`);
       fetchPurchases();
     } catch (err) {
       alert('Error deleting bill');
@@ -366,6 +396,22 @@ export default function Purchases() {
               </div>
               <form onSubmit={handleSubmit} className="modal-form">
                 <div className="form-grid-2" style={{ marginBottom: '20px' }}>
+                  {user?.role === 'superadmin' && (
+                    <div className="form-group">
+                      <label>Target Company *</label>
+                      <select 
+                        className="input-field highlight-input" 
+                        required 
+                        value={form.companyId} 
+                        onChange={e => setForm({...form, companyId: e.target.value})}
+                      >
+                        <option value="">-- Choose Target Company --</option>
+                        {companies.map(c => (
+                          <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label>Supplier Name *</label>
                     <input className="input-field highlight-input" required list="supplier-list" value={form.supplierName} onChange={e => handleSupplierName(e.target.value)} />
@@ -504,6 +550,22 @@ export default function Purchases() {
               </div>
               <form onSubmit={handleEditSave} className="modal-form">
                 <div className="form-grid-2" style={{ marginBottom: '20px' }}>
+                  {user?.role === 'superadmin' && (
+                    <div className="form-group">
+                      <label>Target Company *</label>
+                      <select 
+                        className="input-field highlight-input" 
+                        required 
+                        value={editForm.companyId} 
+                        onChange={e => setEditForm({...editForm, companyId: e.target.value})}
+                      >
+                        <option value="">-- Choose Target Company --</option>
+                        {companies.map(c => (
+                          <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label>Supplier Name *</label>
                     <input className="input-field highlight-input" required list="supplier-list-edit" value={editForm.supplierName} onChange={e => handleSupplierName(e.target.value, true)} />
@@ -689,6 +751,7 @@ export default function Purchases() {
               <tr>
                 <th>Date</th>
                 <th>Bill No</th>
+                {user?.role === 'superadmin' && <th>Company</th>}
                 <th>Supplier</th>
                 <th>Total Items</th>
                 <th>GST Amt</th>
@@ -699,14 +762,15 @@ export default function Purchases() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="8" className="loading-state">Loading purchases...</td></tr>
+                <tr><td colSpan={user?.role === 'superadmin' ? 9 : 8} className="loading-state">Loading purchases...</td></tr>
               ) : groupedPurchases.length === 0 ? (
-                <tr><td colSpan="8" className="empty-row">No purchases recorded yet.</td></tr>
+                <tr><td colSpan={user?.role === 'superadmin' ? 9 : 8} className="empty-row">No purchases recorded yet.</td></tr>
               ) : (
                 groupedPurchases.map(g => (
                   <tr key={g._id}>
                     <td>{new Date(g.purchaseDate).toLocaleDateString()}</td>
                     <td><div className="badge">{g.billNumber}</div></td>
+                    {user?.role === 'superadmin' && <td>{g.items[0]?.companyId?.name || g.items[0]?.companyId || 'N/A'}</td>}
                     <td>{g.supplierName}</td>
                     <td>{g.totalItems}</td>
                     <td>₹{g.totalGst.toFixed(2)}</td>
@@ -725,7 +789,7 @@ export default function Purchases() {
                       <div className="action-btns">
                         <button className="action-btn-icon view" onClick={() => openView(g.billNumber)} title="View Items">👁️</button>
                         <button className="action-btn-icon edit" onClick={() => openEdit(g)} title="Edit Bill">✏️</button>
-                        <button className="action-btn-icon del" onClick={() => handleDeleteBill(g.billNumber)} title="Delete Bill">🗑️</button>
+                        <button className="action-btn-icon del" onClick={() => handleDeleteBill(g.billNumber, g)} title="Delete Bill">🗑️</button>
                       </div>
                     </td>
                   </tr>

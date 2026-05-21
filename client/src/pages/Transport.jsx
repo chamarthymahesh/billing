@@ -117,7 +117,7 @@ export default function Transport() {
                           {r.invoiceId && <div className="sub-text">Delivery: {r.invoiceId.invoiceNumber}</div>}
                         </div>
                       </td>
-                      <td className="amount-cell">₹{r.amount.toLocaleString('en-IN')}</td>
+                      <td className="amount-cell">₹{r.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td>
                         <button className="action-btn delete" onClick={() => handleDelete(r._id)}>🗑️</button>
                       </td>

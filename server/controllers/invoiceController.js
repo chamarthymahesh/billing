@@ -471,3 +471,19 @@ exports.getDetailedReports = async (req, res) => {
   }
 };
 
+exports.updateMaterialDeliveryStatus = async (req, res) => {
+  try {
+    const status = req.body.materialDeliveryStatus || req.body.status;
+    const invoice = await Invoice.findByIdAndUpdate(
+      req.params.id,
+      { materialDeliveryStatus: status },
+      { new: true }
+    );
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    res.json(invoice);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+

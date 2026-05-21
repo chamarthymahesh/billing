@@ -110,7 +110,7 @@ export default function Employees() {
                         </td>
                         <td>{emp.designation}</td>
                         <td>{emp.phone}<br/><small>{emp.email}</small></td>
-                        <td className="amount-cell">₹{emp.salaryAmount.toLocaleString('en-IN')}</td>
+                        <td className="amount-cell">₹{emp.salaryAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td><span className={`status-badge ${emp.isActive ? 'active' : 'inactive'}`}>{emp.isActive ? 'Active' : 'Inactive'}</span></td>
                         <td>
                           <button className="btn-pay" onClick={() => openPayModal(emp)}>💳 Pay Salary</button>
@@ -144,7 +144,7 @@ export default function Employees() {
                           </div>
                         </td>
                         <td><span className="month-badge">{rec.month}</span></td>
-                        <td className="amount-cell positive">₹{rec.amountPaid.toLocaleString('en-IN')}</td>
+                        <td className="amount-cell positive">₹{rec.amountPaid.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>{rec.paymentMethod}</td>
                         <td>{rec.notes}</td>
                       </tr>

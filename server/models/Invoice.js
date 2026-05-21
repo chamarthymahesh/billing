@@ -29,7 +29,9 @@ const invoiceSchema = new mongoose.Schema({
     cgst: Number,
     sgst: Number,
     igst: Number,
-    total: Number
+    total: Number,
+    materialStatus: { type: String, enum: ['Pending', 'Delivered'], default: 'Pending' },
+    hasPurchase: { type: Boolean, default: false }
   }],
   subTotal: { type: Number, required: true },
   totalGst: { type: Number, default: 0 },
@@ -42,6 +44,7 @@ const invoiceSchema = new mongoose.Schema({
   totalProfit: { type: Number, default: 0 },
   isGst: { type: Boolean, default: false },
   status: { type: String, enum: ['paid', 'unpaid', 'partially_paid'], default: 'unpaid' },
+  materialDeliveryStatus: { type: String, enum: ['Pending', 'Delivered'], default: 'Pending' },
   notes: String,
   dispatchAddress: String,
   dispatchState: String

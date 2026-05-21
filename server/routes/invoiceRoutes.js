@@ -29,3 +29,8 @@ router.put('/:id/commission-details', protect, updateCommissionDetails);
 router.put('/:id/transport-details', protect, updateTransportDetails);
 
 module.exports = router;
+
+router.put('/:id/delivery-status', protect, (req, res, next) => {
+  const { updateMaterialDeliveryStatus } = require('../controllers/invoiceController');
+  updateMaterialDeliveryStatus(req, res);
+});

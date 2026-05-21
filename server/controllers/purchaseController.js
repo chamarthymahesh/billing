@@ -168,7 +168,7 @@ exports.updatePurchaseBill = async (req, res) => {
 exports.deletePurchaseBill = async (req, res) => {
   try {
     const { billNumber } = req.params;
-    const companyId = req.user.role === 'superadmin' ? req.user.companyId : req.user.companyId;
+    const companyId = req.user.role === 'superadmin' ? req.query.companyId : req.user.companyId;
 
     const existingPurchases = await Purchase.find({ billNumber, companyId });
     if (!existingPurchases.length) return res.status(404).json({ message: 'Bill not found' });

@@ -8,6 +8,44 @@ import './CreateInvoice.css';
 
 const EMPTY_ITEM = { productId: '', description: '', hsnCode: '', quantity: 1, rate: 0, gstRate: 18 };
 const GST_RATES = [0, 5, 12, 18, 28];
+const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry"
+];
 
 export default function CreateInvoice() {
   const { user } = useAuth();
@@ -37,7 +75,8 @@ export default function CreateInvoice() {
     notes: '',
     dispatchAddress: '',
     dispatchState: '',
-    sameAsCompany: true
+    sameAsCompany: true,
+    materialDeliveryStatus: 'Pending'
   });
 
   useEffect(() => {
@@ -100,7 +139,8 @@ export default function CreateInvoice() {
           dispatchAddress: inv.dispatchAddress || '',
           dispatchState: inv.dispatchState || '',
           sameAsCompany: inv.sameAsCompany !== undefined ? inv.sameAsCompany : true,
-          invoiceNumber: inv.invoiceNumber
+          invoiceNumber: inv.invoiceNumber,
+          materialDeliveryStatus: inv.materialDeliveryStatus || 'Pending'
         });
         setIsNewCustomer(false);
       }).catch(console.error);
@@ -269,6 +309,18 @@ export default function CreateInvoice() {
               <input className="input-field" placeholder="e.g., GEMC-5116877..." value={form.gemContractNumber}
                 onChange={e => setForm(f => ({ ...f, gemContractNumber: e.target.value }))} />
             </div>
+            <div className="form-group">
+              <label>Material Delivery Status *</label>
+              <select 
+                className="input-field highlight-input" 
+                value={form.materialDeliveryStatus}
+                onChange={e => setForm(f => ({ ...f, materialDeliveryStatus: e.target.value }))} 
+                required
+              >
+                <option value="Pending">⏳ Pending</option>
+                <option value="Delivered">✅ Delivered</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -294,13 +346,33 @@ export default function CreateInvoice() {
               )}
               
               {(isNewCustomer || customerSuggestions.length === 0) && (
-                <input 
-                  className="input-field highlight-input" 
-                  placeholder="Type new customer name..." 
-                  required
-                  value={form.customer.name} 
-                  onChange={e => handleCustomer('name', e.target.value)} 
-                />
+                <>
+                  <input 
+                    className="input-field highlight-input" 
+                    placeholder="Type new customer name..." 
+                    required
+                    value={form.customer.name} 
+                    onChange={e => handleCustomer('name', e.target.value)} 
+                  />
+                  {(() => {
+                    const dup = customerSuggestions.find(
+                      c => form.customer.name && c.name.trim().toLowerCase() === form.customer.name.trim().toLowerCase()
+                    );
+                    return isNewCustomer && dup ? (
+                      <div className="duplicate-warning" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '6px', marginTop: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.85rem' }}>
+                        <span>⚠️ Customer <strong>"{dup.name}"</strong> is already registered!</span>
+                        <button 
+                          type="button" 
+                          className="btn-primary btn-sm" 
+                          style={{ marginLeft: '10px', display: 'inline-flex', padding: '4px 8px', fontSize: '0.75rem', border: 'none', cursor: 'pointer' }} 
+                          onClick={() => handleCustomerSelect(dup.name)}
+                        >
+                          Select Existing
+                        </button>
+                      </div>
+                    ) : null;
+                  })()}
+                </>
               )}
             </div>
             <div className="form-group">
@@ -332,14 +404,28 @@ export default function CreateInvoice() {
               </div>
             )}
             <div className="form-group">
-              <label>Customer State (Billing)</label>
-              <input className="input-field" placeholder="e.g. Maharashtra, Delhi"
-                value={form.customer.state} onChange={e => handleCustomer('state', e.target.value)} />
+              <label>Customer State (Billing) *</label>
+              <select 
+                className="input-field highlight-input" 
+                required
+                value={form.customer.state} 
+                onChange={e => handleCustomer('state', e.target.value)}
+              >
+                <option value="">-- Select State --</option>
+                {INDIAN_STATES.map(st => <option key={st} value={st}>{st}</option>)}
+              </select>
             </div>
             <div className="form-group">
               <label>Place of Supply (Delivery State) *</label>
-              <input className="input-field highlight-input" placeholder="Determines IGST vs CGST/SGST" required
-                value={form.customer.placeOfSupply} onChange={e => handleCustomer('placeOfSupply', e.target.value)} />
+              <select 
+                className="input-field highlight-input" 
+                required
+                value={form.customer.placeOfSupply} 
+                onChange={e => handleCustomer('placeOfSupply', e.target.value)}
+              >
+                <option value="">-- Select State --</option>
+                {INDIAN_STATES.map(st => <option key={st} value={st}>{st}</option>)}
+              </select>
             </div>
             {form.isGst && (
               <div className="form-group">
@@ -370,8 +456,15 @@ export default function CreateInvoice() {
               </div>
               <div className="form-group">
                 <label>Dispatch State *</label>
-                <input className="input-field highlight-input" placeholder="e.g. Maharashtra" required
-                  value={form.dispatchState} onChange={e => setForm(f => ({ ...f, dispatchState: e.target.value }))} />
+                <select 
+                  className="input-field highlight-input" 
+                  required
+                  value={form.dispatchState} 
+                  onChange={e => setForm(f => ({ ...f, dispatchState: e.target.value }))}
+                >
+                  <option value="">-- Select State --</option>
+                  {INDIAN_STATES.map(st => <option key={st} value={st}>{st}</option>)}
+                </select>
               </div>
             </div>
           )}

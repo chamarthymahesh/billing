@@ -2,7 +2,8 @@ const Product = require('../models/Product');
 
 exports.createProduct = async (req, res) => {
   try {
-    const product = await Product.create({ ...req.body, companyId: req.user.companyId });
+    const companyId = req.user.role === 'superadmin' ? null : req.user.companyId;
+    const product = await Product.create({ ...req.body, companyId });
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -11,8 +12,8 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
-    const products = await Product.find(filter);
+    // Return all products globally to all users
+    const products = await Product.find({});
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });

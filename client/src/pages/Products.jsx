@@ -32,6 +32,8 @@ export default function Products() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showCustomBrandInput, setShowCustomBrandInput] = useState(false);
+  const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
 
   const fetchProducts = () => {
     setLoading(true);
@@ -43,8 +45,31 @@ export default function Products() {
   const uniqueBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
   const uniqueCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
-  const openAdd = () => { setForm(EMPTY); setEditing(null); setShowForm(true); };
-  const openEdit = (p) => { setForm(p); setEditing(p._id); setShowForm(true); };
+  const openAdd = () => { 
+    setForm(EMPTY); 
+    setEditing(null); 
+    setShowCustomBrandInput(false);
+    setShowCustomCategoryInput(false);
+    setShowForm(true); 
+  };
+  
+  const openEdit = (p) => { 
+    setForm(p); 
+    setEditing(p._id); 
+    setShowCustomBrandInput(false);
+    setShowCustomCategoryInput(false);
+    setShowForm(true); 
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      await API.delete(`/products/${id}`);
+      fetchProducts();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error deleting product');
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -133,11 +158,43 @@ export default function Products() {
                 </div>
                 <div className="form-group">
                   <label>Brand</label>
-                  <input className="input-field" placeholder="e.g. Samsung, Nike" value={form.brand} list="brands-list"
-                    onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
-                  <datalist id="brands-list">
-                    {uniqueBrands.map(b => <option key={b} value={b} />)}
-                  </datalist>
+                  <select 
+                    className="input-field" 
+                    value={showCustomBrandInput ? '_new_brand' : form.brand}
+                    onChange={e => {
+                      if (e.target.value === '_new_brand') {
+                        setShowCustomBrandInput(true);
+                        setForm(f => ({ ...f, brand: '' }));
+                      } else {
+                        setShowCustomBrandInput(false);
+                        setForm(f => ({ ...f, brand: e.target.value }));
+                      }
+                    }}
+                  >
+                    <option value="">-- Choose Brand --</option>
+                    {uniqueBrands.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                    <option value="_new_brand">➕ Create New Brand...</option>
+                  </select>
+                  {showCustomBrandInput && (
+                    <div style={{ marginTop: '8px' }}>
+                      <input 
+                        className="input-field highlight-input" 
+                        placeholder="Type new brand name..." 
+                        value={form.brand} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setForm(f => ({ ...f, brand: val }));
+                        }}
+                      />
+                      {uniqueBrands.some(b => b.toLowerCase() === form.brand.trim().toLowerCase()) && (
+                        <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '4px' }}>
+                          ⚠️ Brand already exists in list! Please choose from dropdown.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>Product Type</label>
@@ -149,11 +206,43 @@ export default function Products() {
                 </div>
                 <div className="form-group">
                   <label>Category</label>
-                  <input className="input-field" placeholder="e.g. Electronics, Footwear" value={form.category} list="categories-list"
-                    onChange={e => handleCategoryChange(e.target.value)} />
-                  <datalist id="categories-list">
-                    {uniqueCategories.map(c => <option key={c} value={c} />)}
-                  </datalist>
+                  <select 
+                    className="input-field" 
+                    value={showCustomCategoryInput ? '_new_category' : form.category}
+                    onChange={e => {
+                      if (e.target.value === '_new_category') {
+                        setShowCustomCategoryInput(true);
+                        setForm(f => ({ ...f, category: '' }));
+                      } else {
+                        setShowCustomCategoryInput(false);
+                        handleCategoryChange(e.target.value);
+                      }
+                    }}
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {uniqueCategories.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                    <option value="_new_category">➕ Create New Category...</option>
+                  </select>
+                  {showCustomCategoryInput && (
+                    <div style={{ marginTop: '8px' }}>
+                      <input 
+                        className="input-field highlight-input" 
+                        placeholder="Type new category name..." 
+                        value={form.category} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          handleCategoryChange(val);
+                        }}
+                      />
+                      {uniqueCategories.some(c => c.toLowerCase() === form.category.trim().toLowerCase()) && (
+                        <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '4px' }}>
+                          ⚠️ Category already exists in list! Please choose from dropdown.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>SKU / Item Code</label>
@@ -264,7 +353,7 @@ export default function Products() {
                       <div className="category-text">{p.category || 'General'}</div>
                     </td>
                     <td className="price-cell">
-                      <div className="selling-price">₹{Number(p.price).toLocaleString('en-IN')}</div>
+                      <div className="selling-price">₹{Number(p.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       <div className="mrp-text">MRP: ₹{p.mrp || 0}</div>
                     </td>
                     <td>
