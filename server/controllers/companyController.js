@@ -3,36 +3,25 @@ const Invoice = require('../models/Invoice');
 const Purchase = require('../models/Purchase');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const { calculateNetInvoiceProfit } = require('./invoiceController');
 
 exports.getGlobalStats = async (req, res) => {
   try {
-    const [invoiceStats] = await Invoice.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalSales: { $sum: '$grandTotal' },
-          totalProfit: { $sum: '$totalProfit' },
-          totalTransport: { $sum: '$transportCharges' },
-          totalCommission: { $sum: '$commission' }
-        }
-      }
-    ]);
+    const invoices = await Invoice.find({});
+    const purchases = await Purchase.find({});
 
-    const [purchaseStats] = await Purchase.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalPurchases: { $sum: '$totalAmount' }
-        }
-      }
-    ]);
+    const totalSales = invoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+    const totalProfit = invoices.reduce((sum, inv) => sum + calculateNetInvoiceProfit(inv, purchases), 0);
+    const totalTransport = invoices.reduce((sum, inv) => sum + (inv.transportCharges || 0), 0);
+    const totalCommission = invoices.reduce((sum, inv) => sum + (inv.commission || 0), 0);
+    const totalPurchases = purchases.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
 
     res.json({
-      totalSales: invoiceStats?.totalSales || 0,
-      totalProfit: invoiceStats?.totalProfit || 0,
-      totalTransport: invoiceStats?.totalTransport || 0,
-      totalCommission: invoiceStats?.totalCommission || 0,
-      totalPurchases: purchaseStats?.totalPurchases || 0
+      totalSales,
+      totalProfit,
+      totalTransport,
+      totalCommission,
+      totalPurchases
     });
   } catch (error) {
     console.error('GET_GLOBAL_STATS_ERROR:', error);

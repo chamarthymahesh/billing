@@ -27,7 +27,9 @@ const calculateNetInvoiceProfit = (inv, purchases) => {
       const itemProdId = item.productId.toString();
       // Find all purchases for this product, pick the most recent one
       const matchingPurchases = purchases.filter(p =>
-        p.productId && p.productId.toString() === itemProdId
+        p.productId && 
+        p.productId.toString() === itemProdId &&
+        (!p.companyId || !inv.companyId || p.companyId.toString() === inv.companyId.toString())
       );
 
       if (matchingPurchases.length > 0) {
@@ -68,6 +70,8 @@ const calculateNetInvoiceProfit = (inv, purchases) => {
 
   return itemProfitsSum - commission - transportCharges;
 };
+
+exports.calculateNetInvoiceProfit = calculateNetInvoiceProfit;
 
 exports.createInvoice = async (req, res) => {
   try {
@@ -451,7 +455,7 @@ exports.getDetailedReports = async (req, res) => {
           date: inv.date,
           customerName: inv.customer?.name,
           grandTotal: inv.grandTotal || 0,
-          totalProfit: inv.totalProfit || 0,
+          totalProfit: calculateNetInvoiceProfit(inv, purchases),
           transportCharges: inv.transportCharges || 0,
           commission: inv.commission || 0
         })).sort((a, b) => new Date(b.date) - new Date(a.date)),
