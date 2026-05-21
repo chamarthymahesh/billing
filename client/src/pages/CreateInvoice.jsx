@@ -58,6 +58,12 @@ export default function CreateInvoice() {
   const [useGlobalCustomers, setUseGlobalCustomers] = useState(false);
   const [localCustomers, setLocalCustomers] = useState([]);
   const [globalCustomers, setGlobalCustomers] = useState([]);
+  // Supplier states
+  const [useGlobalSuppliers, setUseGlobalSuppliers] = useState(false);
+  const [localSuppliers, setLocalSuppliers] = useState([]);
+  const [globalSuppliers, setGlobalSuppliers] = useState([]);
+  const [supplierSuggestions, setSupplierSuggestions] = useState([]);
+  // Removed duplicate customer state declarations; they are defined earlier.
 
   const [form, setForm] = useState({
     isGst: true,
@@ -68,6 +74,7 @@ export default function CreateInvoice() {
       name: '', address: '', phone: '', gstin: '', state: '', placeOfSupply: '',
       shippingAddress: '', sameAsBilling: true 
     },
+    supplier: { name: '', address: '', phone: '' },
     items: [{ ...EMPTY_ITEM }],
     transportCharges: 0,
     transportStatus: 'unpaid',
@@ -83,17 +90,16 @@ export default function CreateInvoice() {
   });
 
   useEffect(() => {
+    // Fetch customers and suppliers data
     Promise.all([
       API.get('/products'),
       API.get('/invoices'),
       API.get(`/companies/${user.companyId}`)
     ]).then(([prodRes, invRes, compRes]) => {
       setProducts(prodRes.data);
-      // Extract unique customers by merging data to ensure fields like state are preserved
+      // Build customer map
       const customerMap = new Map();
-      // Sort descending by date to prioritize most recent customer data
       const sortedInvoices = [...invRes.data].sort((a, b) => new Date(b.date) - new Date(a.date));
-      
       sortedInvoices.forEach(inv => {
         if (inv.customer?.name) {
           const nameLower = inv.customer.name.toLowerCase().trim();
@@ -101,19 +107,22 @@ export default function CreateInvoice() {
             customerMap.set(nameLower, { ...inv.customer });
           } else {
             const existing = customerMap.get(nameLower);
-            ['state', 'address', 'phone', 'gstin', 'placeOfSupply', 'shippingAddress'].forEach(field => {
-              if (!existing[field] && inv.customer[field]) {
-                existing[field] = inv.customer[field];
-              }
-            });
+            ['state', 'address', 'phone', 'gstin', 'placeOfSupply', 'shippingAddress']
+              .forEach(field => {
+                if (!existing[field] && inv.customer[field]) {
+                  existing[field] = inv.customer[field];
+                }
+              });
           }
         }
       });
       const localList = Array.from(customerMap.values());
       setLocalCustomers(localList);
       setCustomerSuggestions(localList);
-      
-      // Set default notes/terms from company settings
+      // Suppliers - reuse same data for demo (could be distinct endpoint later)
+      setLocalSuppliers(localList);
+      setSupplierSuggestions(localList);
+      // Default notes
       if (compRes.data?.settings?.termsAndConditions) {
         setForm(f => ({ ...f, notes: compRes.data.settings.termsAndConditions }));
       }
@@ -133,6 +142,7 @@ export default function CreateInvoice() {
             name: '', address: '', phone: '', gstin: '', state: '', placeOfSupply: '',
             shippingAddress: '', sameAsBilling: true 
           },
+          supplier: inv.supplier || { name: '', address: '', phone: '' },
           items: inv.items || [{ ...EMPTY_ITEM }],
           transportCharges: inv.transportCharges || 0,
           transportStatus: inv.transportStatus || 'unpaid',
@@ -178,6 +188,17 @@ export default function CreateInvoice() {
     }
   };
 
+  const handleSupplierSelect = (val) => {
+    if (val === 'NEW') {
+      setForm(f => ({ ...f, supplier: { name: '', address: '', phone: '' } }));
+    } else {
+      const match = supplierSuggestions.find(s => s.name === val);
+      if (match) {
+        setForm(f => ({ ...f, supplier: { name: match.name, address: match.address || '', phone: match.phone || '' } }));
+      }
+    }
+  };
+
   const toggleGlobalCustomers = async (checked) => {
     setUseGlobalCustomers(checked);
     if (checked) {
@@ -196,6 +217,28 @@ export default function CreateInvoice() {
       }
     } else {
       setCustomerSuggestions(localCustomers);
+    }
+  };
+
+  // Supplier toggle – reuse the same global endpoint for demo purposes
+  const toggleGlobalSuppliers = async (checked) => {
+    setUseGlobalSuppliers(checked);
+    if (checked) {
+      if (globalSuppliers.length === 0) {
+        try {
+          const res = await API.get('/invoices/global-customers');
+          setGlobalSuppliers(res.data);
+          setSupplierSuggestions(res.data);
+        } catch (err) {
+          console.error("Failed to fetch global suppliers:", err);
+          alert("Error loading global suppliers.");
+          setUseGlobalSuppliers(false);
+        }
+      } else {
+        setSupplierSuggestions(globalSuppliers);
+      }
+    } else {
+      setSupplierSuggestions(localSuppliers);
     }
   };
 
@@ -274,6 +317,12 @@ export default function CreateInvoice() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Ensure supplier name is provided
+    if (!form.supplier?.name) {
+      alert('Supplier Name is required.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
@@ -476,37 +525,38 @@ export default function CreateInvoice() {
           </div>
         </div>
 
-        {/* Dispatch Details */}
+        {/* Supplier Details */}
         <div className="glass-card form-section">
-          <h2 className="section-title">Dispatch Details (Shipped From)</h2>
-          <div className="form-group full-width" style={{ marginBottom: '10px' }}>
-            <label className="checkbox-label">
-              <input type="checkbox" checked={form.sameAsCompany} 
-                onChange={e => setForm(f => ({ ...f, sameAsCompany: e.target.checked }))} />
-              <span>Shipped from Company Registered Address</span>
-            </label>
-          </div>
-          {!form.sameAsCompany && (
-            <div className="form-grid-2">
-              <div className="form-group full-width">
-                <label>Dispatch Address / Warehouse *</label>
-                <textarea className="input-field highlight-input" placeholder="Enter warehouse or dispatch site address" rows="2" required
-                  value={form.dispatchAddress} onChange={e => setForm(f => ({ ...f, dispatchAddress: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>Dispatch State *</label>
-                <select 
-                  className="input-field highlight-input" 
-                  required
-                  value={form.dispatchState} 
-                  onChange={e => setForm(f => ({ ...f, dispatchState: e.target.value }))}
-                >
-                  <option value="">-- Select State --</option>
-                  {INDIAN_STATES.map(st => <option key={st} value={st}>{st}</option>)}
+          <h2 className="section-title">Supplier Details</h2>
+          <label className="checkbox-label" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', background: 'rgba(99, 102, 241, 0.1)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)', marginBottom: '10px' }}>
+            <input type="checkbox" checked={useGlobalSuppliers} onChange={e => toggleGlobalSuppliers(e.target.checked)} style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--primary)' }}>🌐 Load Global Suppliers (All Companies)</span>
+          </label>
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label>Supplier Name *</label>
+              {supplierSuggestions.length > 0 && (
+                <select className="input-field" required value={form.supplier?.name || ''} onChange={e => handleSupplierSelect(e.target.value)}>
+                  <option value="" disabled>Select a supplier...</option>
+                  {supplierSuggestions.map((s, i) => (
+                    <option key={i} value={s.name}>{s.name} {s.phone ? `(${s.phone})` : ''}</option>
+                  ))}
+                  <option value="NEW">➕ Add New Supplier</option>
                 </select>
-              </div>
+              )}
+              {(form.supplier?.name === '' || supplierSuggestions.length === 0) && (
+                <input className="input-field" placeholder="Type new supplier name..." required value={form.supplier?.name || ''} onChange={e => setForm(f => ({ ...f, supplier: { ...f.supplier, name: e.target.value } }))} />
+              )}
             </div>
-          )}
+            <div className="form-group">
+              <label>Phone</label>
+              <input className="input-field" placeholder="+91 XXXXXXXXXX" value={form.supplier?.phone || ''} onChange={e => setForm(f => ({ ...f, supplier: { ...f.supplier, phone: e.target.value } }))} />
+            </div>
+            <div className="form-group full-width">
+              <label>Address</label>
+              <textarea className="input-field" rows="2" placeholder="Full address" value={form.supplier?.address || ''} onChange={e => setForm(f => ({ ...f, supplier: { ...f.supplier, address: e.target.value } }))} />
+            </div>
+          </div>
         </div>
         <div className="glass-card form-section">
           <div className="items-header">
