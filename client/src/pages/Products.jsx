@@ -78,7 +78,8 @@ export default function Products() {
       if (editing) {
         await API.put(`/products/${editing}`, form);
       } else {
-        await API.post('/products', form);
+        const { _id, createdAt, updatedAt, __v, ...postData } = form;
+        await API.post('/products', postData);
       }
       setShowForm(false);
       fetchProducts();
@@ -112,6 +113,10 @@ export default function Products() {
       // If they changed the name so it no longer matches the editing product, switch back to Add mode
       if (editing && existingProduct?._id !== editing) {
         setEditing(null);
+        setForm(f => {
+          const { _id, createdAt, updatedAt, __v, ...rest } = f;
+          return rest;
+        });
       }
     }
   };
