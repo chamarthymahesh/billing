@@ -490,4 +490,39 @@ exports.updateMaterialDeliveryStatus = async (req, res) => {
   }
 };
 
+exports.getGlobalCustomers = async (req, res) => {
+  try {
+    const invoices = await Invoice.find({}).sort({ date: -1, createdAt: -1 });
+    const customerMap = new Map();
+    invoices.forEach(inv => {
+      if (inv.customer?.name) {
+        const nameLower = inv.customer.name.toLowerCase().trim();
+        if (!customerMap.has(nameLower)) {
+          customerMap.set(nameLower, { 
+            name: inv.customer.name,
+            address: inv.customer.address || '',
+            phone: inv.customer.phone || '',
+            gstin: inv.customer.gstin || '',
+            state: inv.customer.state || '',
+            placeOfSupply: inv.customer.placeOfSupply || '',
+            shippingAddress: inv.customer.shippingAddress || '',
+            sameAsBilling: inv.customer.sameAsBilling !== undefined ? inv.customer.sameAsBilling : true
+          });
+        } else {
+          const existing = customerMap.get(nameLower);
+          ['state', 'address', 'phone', 'gstin', 'placeOfSupply', 'shippingAddress'].forEach(field => {
+            if (!existing[field] && inv.customer[field]) {
+              existing[field] = inv.customer[field];
+            }
+          });
+        }
+      }
+    });
+    res.json(Array.from(customerMap.values()));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 

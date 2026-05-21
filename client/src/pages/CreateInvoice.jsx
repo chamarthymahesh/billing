@@ -55,6 +55,9 @@ export default function CreateInvoice() {
   const [products, setProducts] = useState([]);
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
   const [isNewCustomer, setIsNewCustomer] = useState(true);
+  const [useGlobalCustomers, setUseGlobalCustomers] = useState(false);
+  const [localCustomers, setLocalCustomers] = useState([]);
+  const [globalCustomers, setGlobalCustomers] = useState([]);
 
   const [form, setForm] = useState({
     isGst: true,
@@ -106,7 +109,9 @@ export default function CreateInvoice() {
           }
         }
       });
-      setCustomerSuggestions(Array.from(customerMap.values()));
+      const localList = Array.from(customerMap.values());
+      setLocalCustomers(localList);
+      setCustomerSuggestions(localList);
       
       // Set default notes/terms from company settings
       if (compRes.data?.settings?.termsAndConditions) {
@@ -170,6 +175,27 @@ export default function CreateInvoice() {
           }
         }));
       }
+    }
+  };
+
+  const toggleGlobalCustomers = async (checked) => {
+    setUseGlobalCustomers(checked);
+    if (checked) {
+      if (globalCustomers.length === 0) {
+        try {
+          const res = await API.get('/invoices/global-customers');
+          setGlobalCustomers(res.data);
+          setCustomerSuggestions(res.data);
+        } catch (err) {
+          console.error("Failed to fetch global customers:", err);
+          alert("Error loading global customers.");
+          setUseGlobalCustomers(false);
+        }
+      } else {
+        setCustomerSuggestions(globalCustomers);
+      }
+    } else {
+      setCustomerSuggestions(localCustomers);
     }
   };
 
@@ -326,7 +352,20 @@ export default function CreateInvoice() {
 
         {/* Customer Details */}
         <div className="glass-card form-section">
-          <h2 className="section-title">Customer Details</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Customer Details</h2>
+            <label className="checkbox-label" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', background: 'rgba(99, 102, 241, 0.1)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+              <input 
+                type="checkbox" 
+                checked={useGlobalCustomers} 
+                onChange={e => toggleGlobalCustomers(e.target.checked)} 
+                style={{ width: '16px', height: '16px', marginRight: '8px', cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--primary)' }}>
+                🌐 Load Global Customers (All Companies)
+              </span>
+            </label>
+          </div>
           <div className="form-grid-2">
             <div className="form-group">
               <label>Customer Name *</label>

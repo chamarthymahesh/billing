@@ -1,5 +1,5 @@
 const express = require('express');
-const { createInvoice, getInvoices, getInvoiceById, getReports, updateCommissionStatus, updateCommissionDetails, updateInvoice, deleteInvoice, updateTransportDetails } = require('../controllers/invoiceController');
+const { createInvoice, getInvoices, getInvoiceById, getReports, updateCommissionStatus, updateCommissionDetails, updateInvoice, deleteInvoice, updateTransportDetails, getGlobalCustomers } = require('../controllers/invoiceController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -17,6 +17,7 @@ router.get('/detailed-reports', protect, (req, res, next) => {
   const { getDetailedReports } = require('../controllers/invoiceController');
   getDetailedReports(req, res);
 });
+router.get('/global-customers', protect, getGlobalCustomers);
 router.get('/:id', protect, getInvoiceById);
 router.put('/:id', protect, updateInvoice);
 router.delete('/:id', protect, deleteInvoice);
