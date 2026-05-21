@@ -1,51 +1,72 @@
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 
+/**
+ * Calculate net profit for an invoice.
+ * 
+ * Formula per item:
+ *   itemProfit = (sellingRate - purchaseCostPerUnit) * quantity
+ * 
+ * Where purchaseCostPerUnit comes from:
+ *   1. The most recent purchase record for the same product (base rate + proportional other charges)
+ *   2. Fallback: item.purchasePrice stored on the invoice
+ * 
+ * GST is EXCLUDED from profit calculation because it's a pass-through
+ * (collected from customer and paid to the government).
+ * 
+ * Total invoice profit = sum of item profits - commission - transport charges
+ */
 const calculateNetInvoiceProfit = (inv, purchases) => {
   const itemProfitsSum = inv.items.reduce((sum, item) => {
-    // 1. Find matching purchase for this item
-    const matchedPurchase = purchases.find(p => 
-      p.productId?.toString() === item.productId?.toString() || 
-      (p.productId && item.productId && p.productId.toString() === item.productId.toString())
-    );
+    const sellingRate = Number(item.rate) || 0;
+    const qty = Number(item.quantity) || 0;
+    let purchaseCostPerUnit = 0;
 
-    let purchaseBase = 0;
-    let purchaseGst = 0;
-    
-    if (matchedPurchase && matchedPurchase.quantity > 0) {
-      // Calculate unit base and unit GST from purchase
-      const unitBase = matchedPurchase.subTotal / matchedPurchase.quantity;
-      const unitGst = (matchedPurchase.totalGst || 0) / matchedPurchase.quantity;
-      
-      const otherCharges = (matchedPurchase.packagingCharges || 0) + 
-                           (matchedPurchase.transportCharges || 0) + 
-                           (matchedPurchase.miscCharges || 0);
-      const unitOther = otherCharges / matchedPurchase.quantity;
-      
-      purchaseBase = (unitBase + unitOther) * item.quantity;
-      purchaseGst = unitGst * item.quantity;
-    } else {
-      purchaseBase = (item.purchasePrice || 0) * item.quantity;
-      purchaseGst = item.isGst ? (purchaseBase * (item.gstRate || 0)) / 100 : 0;
+    // Try to find a matching purchase record for this product
+    if (item.productId) {
+      const itemProdId = item.productId.toString();
+      // Find all purchases for this product, pick the most recent one
+      const matchingPurchases = purchases.filter(p =>
+        p.productId && p.productId.toString() === itemProdId
+      );
+
+      if (matchingPurchases.length > 0) {
+        // Sort by purchaseDate descending, use the latest purchase for cost basis
+        const latestPurchase = matchingPurchases.sort((a, b) =>
+          new Date(b.purchaseDate || b.createdAt) - new Date(a.purchaseDate || a.createdAt)
+        )[0];
+
+        if (latestPurchase.quantity > 0) {
+          // Base cost per unit from purchase (subTotal / qty = rate already, but subTotal is accurate)
+          const unitBase = latestPurchase.subTotal / latestPurchase.quantity;
+
+          // Proportional other charges per unit
+          const otherCharges = (Number(latestPurchase.packagingCharges) || 0) +
+                               (Number(latestPurchase.transportCharges) || 0) +
+                               (Number(latestPurchase.miscCharges) || 0);
+          const unitOther = otherCharges / latestPurchase.quantity;
+
+          purchaseCostPerUnit = unitBase + unitOther;
+        }
+      }
     }
 
-    const sellingBase = item.amount || (item.quantity * item.rate);
-    const sellingGst = item.isGst ? (sellingBase * (item.gstRate || 0)) / 100 : 0;
+    // Fallback: use purchasePrice stored on the invoice item
+    if (purchaseCostPerUnit === 0) {
+      purchaseCostPerUnit = Number(item.purchasePrice) || 0;
+    }
 
-    const sellingTotal = sellingBase + sellingGst;
-    const purchaseTotal = purchaseBase + purchaseGst;
+    // Item profit = (selling rate - purchase cost) * quantity
+    const itemProfit = (sellingRate - purchaseCostPerUnit) * qty;
 
-    const grossProfit = sellingTotal - purchaseTotal;
-    const gstDifference = sellingGst - purchaseGst;
-
-    // Net Profit = Gross Profit - GST Difference
-    const itemNetProfit = grossProfit - gstDifference;
-
-    return sum + itemNetProfit;
+    return sum + itemProfit;
   }, 0);
 
-  // Subtract invoice-level commissions and transport charges
-  return itemProfitsSum - (inv.commission || 0) - (inv.transportCharges || 0);
+  // Subtract invoice-level deductions
+  const commission = Number(inv.commission) || 0;
+  const transportCharges = Number(inv.transportCharges) || 0;
+
+  return itemProfitsSum - commission - transportCharges;
 };
 
 exports.createInvoice = async (req, res) => {
@@ -352,7 +373,7 @@ exports.updateInvoice = async (req, res) => {
 
     // Compute total profit including transport and commission deductions
     totalProfit = totalProfit - (Number(transportCharges) || 0) - (Number(commission) || 0);
-    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0);
+    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0) + (Number(transportCharges) || 0);
     
     const invoice = await Invoice.findByIdAndUpdate(
       req.params.id,

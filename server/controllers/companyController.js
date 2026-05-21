@@ -6,24 +6,55 @@ const bcrypt = require('bcryptjs');
 exports.createCompany = async (req, res) => {
   try {
     const { adminName, adminEmail, adminPassword, ...companyData } = req.body;
-    
+
+    // Validate required fields
+    if (!companyData.name || !companyData.address || !companyData.phone || !companyData.email) {
+      return res.status(400).json({ message: 'Company name, address, phone, and email are required.' });
+    }
+
+    // Check for duplicate company email
+    const existingCompany = await Company.findOne({ email: companyData.email });
+    if (existingCompany) {
+      return res.status(409).json({ message: `A company with email "${companyData.email}" already exists.` });
+    }
+
+    // Check for duplicate admin email before creating anything
+    if (adminEmail) {
+      const existingUser = await User.findOne({ email: adminEmail });
+      if (existingUser) {
+        return res.status(409).json({ message: `A user with email "${adminEmail}" already exists. Please use a different admin email.` });
+      }
+    }
+
     // 1. Create the company
     const company = await Company.create(companyData);
-    
+
     // 2. Create the admin user for this company
     if (adminEmail && adminPassword) {
-      await User.create({
-        name: adminName || company.name + ' Admin',
-        email: adminEmail,
-        password: adminPassword,
-        role: 'companyadmin',
-        companyId: company._id
-      });
+      try {
+        await User.create({
+          name: adminName || company.name + ' Admin',
+          email: adminEmail,
+          password: adminPassword,
+          role: 'companyadmin',
+          companyId: company._id
+        });
+      } catch (userError) {
+        // Rollback: delete the company if admin user creation fails
+        await Company.findByIdAndDelete(company._id);
+        console.error('CREATE_ADMIN_USER_ERROR (company rolled back):', userError);
+        return res.status(500).json({ message: 'Company was created but admin user creation failed. Changes have been rolled back. Error: ' + userError.message });
+      }
     }
-    
+
     res.status(201).json(company);
   } catch (error) {
     console.error('CREATE_COMPANY_ERROR:', error);
+    // Handle MongoDB duplicate key errors
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'field';
+      return res.status(409).json({ message: `A company with this ${field} already exists.` });
+    }
     res.status(500).json({ message: error.message });
   }
 };

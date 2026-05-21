@@ -57,7 +57,8 @@ export default function SuperAdmin() {
       setShowForm(false);
       fetchCompanies();
     } catch (err) {
-      alert('Error saving company details');
+      const msg = err.response?.data?.message || 'Error saving company details';
+      alert(msg);
     }
   };
 
