@@ -440,7 +440,7 @@ exports.getDetailedReports = async (req, res) => {
         gstin: comp.gstin,
         totals: {
           sales: compInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0),
-          profit: compInvoices.reduce((sum, inv) => sum + (inv.totalProfit || 0), 0),
+          profit: compInvoices.reduce((sum, inv) => sum + calculateNetInvoiceProfit(inv, purchases), 0),
           transport: compInvoices.reduce((sum, inv) => sum + (inv.transportCharges || 0), 0),
           commission: compInvoices.reduce((sum, inv) => sum + (inv.commission || 0), 0),
           purchases: compPurchases.reduce((sum, p) => sum + (p.totalAmount || 0), 0)
