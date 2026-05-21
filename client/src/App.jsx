@@ -25,6 +25,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   return children;
 };
 
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import AdminReports from './pages/AdminReports';
 
 function App() {
@@ -45,7 +46,9 @@ function App() {
           <Route path="/transport" element={<ProtectedRoute><Transport /></ProtectedRoute>} />
           <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/super-admin" element={<ProtectedRoute adminOnly><SuperAdmin /></ProtectedRoute>} />
+          <Route path="/super-admin" element={<ProtectedRoute adminOnly><Navigate to="/super-admin/dashboard" /></ProtectedRoute>} />
+          <Route path="/super-admin/dashboard" element={<ProtectedRoute adminOnly><SuperAdminDashboard /></ProtectedRoute>} />
+          <Route path="/super-admin/companies" element={<ProtectedRoute adminOnly><SuperAdmin /></ProtectedRoute>} />
           <Route path="/super-admin/invoices" element={<ProtectedRoute adminOnly><AdminInvoices /></ProtectedRoute>} />
           <Route path="/super-admin/global-stock" element={<ProtectedRoute adminOnly><GlobalStock /></ProtectedRoute>} />
           <Route path="/super-admin/reports" element={<ProtectedRoute adminOnly><AdminReports /></ProtectedRoute>} />

@@ -14,6 +14,7 @@ export default function SuperAdmin() {
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [globalStats, setGlobalStats] = useState(null);
+  const [companyProfits, setCompanyProfits] = useState({});
 
   const filteredCompanies = companies.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -24,27 +25,25 @@ export default function SuperAdmin() {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const { data } = await API.get('/companies');
-      setCompanies(data);
+      const { data: companyData } = await API.get('/companies');
+      setCompanies(companyData);
+      // Fetch detailed reports for profits per company
+      const { data: reports } = await API.get('/invoices/detailed-reports');
+      // Map company ID to profit
+      const profitMap = {};
+      reports.forEach(rep => {
+        profitMap[rep._id] = rep.totals.profit || 0;
+      });
+      setCompanyProfits(profitMap);
     } catch (err) {
-      console.error('Error fetching companies:', err);
+      console.error('Error fetching companies or reports:', err);
     } finally {
       setLoading(false);
     }
   };
-
-  const fetchGlobalStats = async () => {
-    try {
-      const { data } = await API.get('/companies/global-stats');
-      setGlobalStats(data);
-    } catch (err) {
-      console.error('Error fetching global stats:', err);
-    }
-  };
-
-  useEffect(() => { 
-    fetchCompanies(); 
-    fetchGlobalStats();
+  
+  useEffect(() => {
+    fetchCompanies();
   }, []);
 
   const openAdd = () => { 
@@ -90,80 +89,17 @@ export default function SuperAdmin() {
     navigate(`/super-admin/invoices?companyId=${id}`);
   };
 
-  const summaryStats = [
-    { label: 'Total Companies', value: companies.length, icon: '🏢', color: '#6366f1', onClick: () => {} },
-    { label: 'All Invoices', value: 'View All', icon: '🧾', color: '#ec4899', onClick: () => navigate('/super-admin/invoices') },
-    { label: 'Global Reports', value: 'Analytics', icon: '📊', color: '#f59e0b', onClick: () => navigate('/super-admin/reports') },
-  ];
-
   return (
     <Layout>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Super Admin Dashboard</h1>
-          <p className="page-subtitle">Global oversight and company management</p>
+          <h1 className="page-title">Company Management</h1>
+          <p className="page-subtitle">Register and manage client companies</p>
         </div>
         <div className="header-actions">
           <button id="add-company-btn" className="btn-primary" onClick={openAdd}>+ Add Company</button>
         </div>
       </div>
-
-      <div className="stat-grid" style={{ marginBottom: 24 }}>
-        {summaryStats.map(card => (
-          <div 
-            key={card.label} 
-            className={`glass-card stat-card-item ${card.onClick ? 'clickable' : ''}`} 
-            style={{ '--accent-color': card.color }}
-            onClick={card.onClick}
-          >
-            <div className="stat-icon-wrap">{card.icon}</div>
-            <div>
-              <div className="stat-val">{card.value}</div>
-              <div className="stat-lbl">{card.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {globalStats && (
-        <div className="stat-grid" style={{ marginBottom: 32 }}>
-          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#10b981' }} onClick={() => navigate('/super-admin/reports?metric=sales')}>
-            <div className="stat-icon-wrap">💰</div>
-            <div>
-              <div className="stat-val">₹{globalStats.totalSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="stat-lbl">Overall Sales</div>
-            </div>
-          </div>
-          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#f43f5e' }} onClick={() => navigate('/super-admin/reports?metric=purchases')}>
-            <div className="stat-icon-wrap">🛒</div>
-            <div>
-              <div className="stat-val">₹{globalStats.totalPurchases.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="stat-lbl">Overall Purchases</div>
-            </div>
-          </div>
-          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#8b5cf6' }} onClick={() => navigate('/super-admin/reports?metric=profit')}>
-            <div className="stat-icon-wrap">📈</div>
-            <div>
-              <div className="stat-val">₹{globalStats.totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="stat-lbl">Overall Profit</div>
-            </div>
-          </div>
-          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#3b82f6' }} onClick={() => navigate('/super-admin/reports?metric=transport')}>
-            <div className="stat-icon-wrap">🚚</div>
-            <div>
-              <div className="stat-val">₹{globalStats.totalTransport.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="stat-lbl">Overall Transport</div>
-            </div>
-          </div>
-          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#f59e0b' }} onClick={() => navigate('/super-admin/reports?metric=commission')}>
-            <div className="stat-icon-wrap">🤝</div>
-            <div>
-              <div className="stat-val">₹{globalStats.totalCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-              <div className="stat-lbl">Overall Commission</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <AnimatePresence>
         {showForm && (
@@ -250,12 +186,13 @@ export default function SuperAdmin() {
                   <th>GSTIN Status</th>
                   <th>Contact</th>
                   <th>Email Address</th>
+                  <th>Profit</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCompanies.length === 0 ? (
-                  <tr><td colSpan="5" className="empty-row">No companies found matching "{searchTerm}"</td></tr>
+                  <tr><td colSpan="6" className="empty-row">No companies found matching "{searchTerm}"</td></tr>
                 ) : (
                   filteredCompanies.map(c => (
                     <tr key={c._id}>
@@ -268,6 +205,7 @@ export default function SuperAdmin() {
                       <td><span className={`badge ${c.gstin ? 'badge-gst' : 'badge-nongst'}`}>{c.gstin || 'Non-GST'}</span></td>
                       <td>{c.phone}</td>
                       <td>{c.email}</td>
+                      <td>{companyProfits[c._id]?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</td>
                       <td>
                         <div className="action-btns">
                           <button className="action-btn-icon view" onClick={() => viewCompanyInvoices(c._id)} title="View Invoices">👁️</button>

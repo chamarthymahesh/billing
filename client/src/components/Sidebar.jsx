@@ -6,6 +6,8 @@ import './Sidebar.css';
 
 const menuItems = [
   { label: 'Dashboard', icon: '📊', path: '/dashboard', roles: ['companyadmin'] },
+  { label: 'Dashboard', icon: '📊', path: '/super-admin/dashboard', roles: ['superadmin'] },
+  { label: 'Companies', icon: '🏢', path: '/super-admin/companies', roles: ['superadmin'] },
   { label: 'Invoices', icon: '🧾', path: '/invoices', roles: ['companyadmin'] },
   { label: 'Create Invoice', icon: '✏️', path: '/invoices/create', roles: ['companyadmin'] },
   { label: 'Purchases', icon: '🛒', path: '/purchases', roles: ['companyadmin', 'superadmin'] },
@@ -14,7 +16,6 @@ const menuItems = [
   { label: 'Transport', icon: '🚚', path: '/transport', roles: ['companyadmin'] },
   { label: 'Employees', icon: '👥', path: '/employees', roles: ['companyadmin'] },
   { label: 'Settings', icon: '⚙️', path: '/settings', roles: ['companyadmin', 'superadmin'] },
-  { label: 'Companies', icon: '🏢', path: '/super-admin', roles: ['superadmin'] },
   { label: 'All Invoices', icon: '🧾', path: '/super-admin/invoices', roles: ['superadmin'] },
   { label: 'Global Stock', icon: '🏢', path: '/super-admin/global-stock', roles: ['superadmin'] },
   { label: 'Reports', icon: '📈', path: '/super-admin/reports', roles: ['superadmin'] },
