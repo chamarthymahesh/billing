@@ -303,7 +303,7 @@ exports.updateCommissionDetails = async (req, res) => {
 
 exports.updateInvoice = async (req, res) => {
   try {
-    const { items, transportCharges, isGst, adjustment } = req.body;
+    const { items, transportCharges, commission, isGst, adjustment } = req.body;
     
     const company = await Company.findById(req.body.companyId);
     if (!company) return res.status(404).json({ message: 'Company not found' });
