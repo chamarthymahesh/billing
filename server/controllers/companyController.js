@@ -13,9 +13,27 @@ exports.createCompany = async (req, res) => {
     }
 
     // Check for duplicate company email
-    const existingCompany = await Company.findOne({ email: companyData.email });
-    if (existingCompany) {
-      return res.status(409).json({ message: `A company with email "${companyData.email}" already exists.` });
+    if (companyData.email) {
+      const existingEmail = await Company.findOne({ email: companyData.email });
+      if (existingEmail) {
+        return res.status(409).json({ message: `A company with email "${companyData.email}" already exists.` });
+      }
+    }
+
+    // Check for duplicate company name
+    if (companyData.name) {
+      const existingName = await Company.findOne({ name: { $regex: new RegExp(`^${companyData.name}$`, 'i') } });
+      if (existingName) {
+        return res.status(409).json({ message: `A company with the name "${companyData.name}" already exists.` });
+      }
+    }
+
+    // Check for duplicate GSTIN
+    if (companyData.gstin) {
+      const existingGstin = await Company.findOne({ gstin: companyData.gstin });
+      if (existingGstin) {
+        return res.status(409).json({ message: `A company with GSTIN "${companyData.gstin}" already exists.` });
+      }
     }
 
     // Check for duplicate admin email before creating anything

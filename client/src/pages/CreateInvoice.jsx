@@ -47,16 +47,27 @@ export default function CreateInvoice() {
       API.get(`/companies/${user.companyId}`)
     ]).then(([prodRes, invRes, compRes]) => {
       setProducts(prodRes.data);
-      // Extract unique customers
-      const unique = [];
-      const seen = new Set();
-      invRes.data.forEach(inv => {
-        if (inv.customer?.name && !seen.has(inv.customer.name.toLowerCase())) {
-          seen.add(inv.customer.name.toLowerCase());
-          unique.push(inv.customer);
+      // Extract unique customers by merging data to ensure fields like state are preserved
+      const customerMap = new Map();
+      // Sort descending by date to prioritize most recent customer data
+      const sortedInvoices = [...invRes.data].sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      sortedInvoices.forEach(inv => {
+        if (inv.customer?.name) {
+          const nameLower = inv.customer.name.toLowerCase().trim();
+          if (!customerMap.has(nameLower)) {
+            customerMap.set(nameLower, { ...inv.customer });
+          } else {
+            const existing = customerMap.get(nameLower);
+            ['state', 'address', 'phone', 'gstin', 'placeOfSupply', 'shippingAddress'].forEach(field => {
+              if (!existing[field] && inv.customer[field]) {
+                existing[field] = inv.customer[field];
+              }
+            });
+          }
         }
       });
-      setCustomerSuggestions(unique);
+      setCustomerSuggestions(Array.from(customerMap.values()));
       
       // Set default notes/terms from company settings
       if (compRes.data?.settings?.termsAndConditions) {
