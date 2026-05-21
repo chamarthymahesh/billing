@@ -13,6 +13,7 @@ export default function SuperAdmin() {
   const [form, setForm] = useState({ name: '', gstin: '', address: '', phone: '', email: '' });
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [globalStats, setGlobalStats] = useState(null);
 
   const filteredCompanies = companies.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -32,7 +33,19 @@ export default function SuperAdmin() {
     }
   };
 
-  useEffect(() => { fetchCompanies(); }, []);
+  const fetchGlobalStats = async () => {
+    try {
+      const { data } = await API.get('/companies/global-stats');
+      setGlobalStats(data);
+    } catch (err) {
+      console.error('Error fetching global stats:', err);
+    }
+  };
+
+  useEffect(() => { 
+    fetchCompanies(); 
+    fetchGlobalStats();
+  }, []);
 
   const openAdd = () => { 
     setForm({ name: '', gstin: '', address: '', phone: '', email: '' }); 
@@ -111,6 +124,46 @@ export default function SuperAdmin() {
           </div>
         ))}
       </div>
+
+      {globalStats && (
+        <div className="stat-grid" style={{ marginBottom: 32 }}>
+          <div className="glass-card stat-card-item" style={{ '--accent-color': '#10b981' }}>
+            <div className="stat-icon-wrap">💰</div>
+            <div>
+              <div className="stat-val">₹{globalStats.totalSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="stat-lbl">Overall Sales</div>
+            </div>
+          </div>
+          <div className="glass-card stat-card-item" style={{ '--accent-color': '#f43f5e' }}>
+            <div className="stat-icon-wrap">🛒</div>
+            <div>
+              <div className="stat-val">₹{globalStats.totalPurchases.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="stat-lbl">Overall Purchases</div>
+            </div>
+          </div>
+          <div className="glass-card stat-card-item" style={{ '--accent-color': '#8b5cf6' }}>
+            <div className="stat-icon-wrap">📈</div>
+            <div>
+              <div className="stat-val">₹{globalStats.totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="stat-lbl">Overall Profit</div>
+            </div>
+          </div>
+          <div className="glass-card stat-card-item" style={{ '--accent-color': '#3b82f6' }}>
+            <div className="stat-icon-wrap">🚚</div>
+            <div>
+              <div className="stat-val">₹{globalStats.totalTransport.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="stat-lbl">Overall Transport</div>
+            </div>
+          </div>
+          <div className="glass-card stat-card-item" style={{ '--accent-color': '#f59e0b' }}>
+            <div className="stat-icon-wrap">🤝</div>
+            <div>
+              <div className="stat-val">₹{globalStats.totalCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+              <div className="stat-lbl">Overall Commission</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {showForm && (

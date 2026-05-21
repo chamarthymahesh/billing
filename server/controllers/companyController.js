@@ -1,7 +1,44 @@
 const Company = require('../models/Company');
-
+const Invoice = require('../models/Invoice');
+const Purchase = require('../models/Purchase');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+
+exports.getGlobalStats = async (req, res) => {
+  try {
+    const [invoiceStats] = await Invoice.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: '$grandTotal' },
+          totalProfit: { $sum: '$totalProfit' },
+          totalTransport: { $sum: '$transportCharges' },
+          totalCommission: { $sum: '$commission' }
+        }
+      }
+    ]);
+
+    const [purchaseStats] = await Purchase.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalPurchases: { $sum: '$totalAmount' }
+        }
+      }
+    ]);
+
+    res.json({
+      totalSales: invoiceStats?.totalSales || 0,
+      totalProfit: invoiceStats?.totalProfit || 0,
+      totalTransport: invoiceStats?.totalTransport || 0,
+      totalCommission: invoiceStats?.totalCommission || 0,
+      totalPurchases: purchaseStats?.totalPurchases || 0
+    });
+  } catch (error) {
+    console.error('GET_GLOBAL_STATS_ERROR:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
 
 exports.createCompany = async (req, res) => {
   try {
