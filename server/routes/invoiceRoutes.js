@@ -12,6 +12,11 @@ router.get('/global-reports', protect, (req, res, next) => {
   const { getGlobalReports } = require('../controllers/invoiceController');
   getGlobalReports(req, res);
 });
+router.get('/detailed-reports', protect, (req, res, next) => {
+  if (req.user.role !== 'superadmin') return res.status(403).json({ message: 'Forbidden' });
+  const { getDetailedReports } = require('../controllers/invoiceController');
+  getDetailedReports(req, res);
+});
 router.get('/:id', protect, getInvoiceById);
 router.put('/:id', protect, updateInvoice);
 router.delete('/:id', protect, deleteInvoice);

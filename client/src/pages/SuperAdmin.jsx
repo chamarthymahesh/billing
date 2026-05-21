@@ -127,35 +127,35 @@ export default function SuperAdmin() {
 
       {globalStats && (
         <div className="stat-grid" style={{ marginBottom: 32 }}>
-          <div className="glass-card stat-card-item" style={{ '--accent-color': '#10b981' }}>
+          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#10b981' }} onClick={() => navigate('/super-admin/reports?metric=sales')}>
             <div className="stat-icon-wrap">💰</div>
             <div>
               <div className="stat-val">₹{globalStats.totalSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               <div className="stat-lbl">Overall Sales</div>
             </div>
           </div>
-          <div className="glass-card stat-card-item" style={{ '--accent-color': '#f43f5e' }}>
+          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#f43f5e' }} onClick={() => navigate('/super-admin/reports?metric=purchases')}>
             <div className="stat-icon-wrap">🛒</div>
             <div>
               <div className="stat-val">₹{globalStats.totalPurchases.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               <div className="stat-lbl">Overall Purchases</div>
             </div>
           </div>
-          <div className="glass-card stat-card-item" style={{ '--accent-color': '#8b5cf6' }}>
+          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#8b5cf6' }} onClick={() => navigate('/super-admin/reports?metric=profit')}>
             <div className="stat-icon-wrap">📈</div>
             <div>
               <div className="stat-val">₹{globalStats.totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               <div className="stat-lbl">Overall Profit</div>
             </div>
           </div>
-          <div className="glass-card stat-card-item" style={{ '--accent-color': '#3b82f6' }}>
+          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#3b82f6' }} onClick={() => navigate('/super-admin/reports?metric=transport')}>
             <div className="stat-icon-wrap">🚚</div>
             <div>
               <div className="stat-val">₹{globalStats.totalTransport.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
               <div className="stat-lbl">Overall Transport</div>
             </div>
           </div>
-          <div className="glass-card stat-card-item" style={{ '--accent-color': '#f59e0b' }}>
+          <div className="glass-card stat-card-item clickable" style={{ '--accent-color': '#f59e0b' }} onClick={() => navigate('/super-admin/reports?metric=commission')}>
             <div className="stat-icon-wrap">🤝</div>
             <div>
               <div className="stat-val">₹{globalStats.totalCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>

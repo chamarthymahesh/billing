@@ -419,3 +419,55 @@ exports.updateTransportDetails = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getDetailedReports = async (req, res) => {
+  try {
+    const Company = require('../models/Company');
+    const Invoice = require('../models/Invoice');
+    const Purchase = require('../models/Purchase');
+    
+    const companies = await Company.find();
+    const invoices = await Invoice.find();
+    const purchases = await Purchase.find();
+    
+    const detailedReports = companies.map(comp => {
+      const compInvoices = invoices.filter(inv => inv.companyId.toString() === comp._id.toString());
+      const compPurchases = purchases.filter(pur => pur.companyId.toString() === comp._id.toString());
+      
+      return {
+        _id: comp._id,
+        name: comp.name,
+        gstin: comp.gstin,
+        totals: {
+          sales: compInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0),
+          profit: compInvoices.reduce((sum, inv) => sum + (inv.totalProfit || 0), 0),
+          transport: compInvoices.reduce((sum, inv) => sum + (inv.transportCharges || 0), 0),
+          commission: compInvoices.reduce((sum, inv) => sum + (inv.commission || 0), 0),
+          purchases: compPurchases.reduce((sum, p) => sum + (p.totalAmount || 0), 0)
+        },
+        invoices: compInvoices.map(inv => ({
+          _id: inv._id,
+          invoiceNumber: inv.invoiceNumber,
+          date: inv.date,
+          customerName: inv.customer?.name,
+          grandTotal: inv.grandTotal || 0,
+          totalProfit: inv.totalProfit || 0,
+          transportCharges: inv.transportCharges || 0,
+          commission: inv.commission || 0
+        })).sort((a, b) => new Date(b.date) - new Date(a.date)),
+        purchases: compPurchases.map(p => ({
+          _id: p._id,
+          billNumber: p.billNumber,
+          supplierName: p.supplierName,
+          date: p.purchaseDate,
+          totalAmount: p.totalAmount || 0
+        })).sort((a, b) => new Date(b.date) - new Date(a.date))
+      };
+    });
+    
+    res.json(detailedReports);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
