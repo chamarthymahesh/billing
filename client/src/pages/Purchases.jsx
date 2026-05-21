@@ -90,6 +90,25 @@ export default function Purchases() {
     }
   };
 
+  const handleTotalChange = (idx, val, isEdit = false) => {
+    const newTotal = Number(val) || 0;
+    const targetForm = isEdit ? editForm : form;
+    const items = [...targetForm.items];
+    const item = items[idx];
+    const qty = Number(item.quantity) || 1;
+    const gstMultiplier = item.isGst ? (1 + Number(item.gstRate) / 100) : 1;
+    
+    // Calculate new base rate: Total / (Qty * (1 + GST%))
+    const newRate = newTotal / (qty * gstMultiplier);
+    
+    items[idx] = { ...item, rate: parseFloat(newRate.toFixed(4)) };
+    if (isEdit) {
+      setEditForm({ ...targetForm, items });
+    } else {
+      setForm({ ...targetForm, items });
+    }
+  };
+
   const addItem = (isEdit = false) => {
     if (isEdit) {
       setEditForm({ ...editForm, items: [...editForm.items, { ...EMPTY_ITEM }] });
@@ -384,46 +403,62 @@ export default function Purchases() {
                   <table className="items-table">
                     <thead>
                       <tr>
-                        <th style={{ width: '40%' }}>Product</th>
-                        <th style={{ width: '15%' }}>Qty</th>
+                        <th style={{ width: '35%' }}>Product</th>
+                        <th style={{ width: '12%' }}>Qty</th>
                         <th style={{ width: '15%' }}>Rate (₹)</th>
-                        <th style={{ width: '12%' }}>GST %</th>
-                        <th style={{ width: '10%' }}>+ GST?</th>
-                        <th style={{ width: '8%' }}></th>
+                        <th style={{ width: '10%' }}>GST %</th>
+                        <th style={{ width: '8%' }}>+ GST?</th>
+                        <th style={{ width: '15%' }}>Total (₹)</th>
+                        <th style={{ width: '5%' }}></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {form.items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td>
-                            <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value)}>
-                              <option value="">-- Choose Product --</option>
-                              {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                            </select>
-                          </td>
-                          <td>
-                            <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value)} />
-                          </td>
-                          <td>
-                            <input type="number" step="any" className="input-field item-input sm" required value={item.rate} onChange={e => handleItemChange(idx, 'rate', e.target.value)} />
-                          </td>
-                          <td>
-                            <select className="input-field item-input sm" value={item.gstRate} onChange={e => handleItemChange(idx, 'gstRate', e.target.value)}>
-                              <option value="0">0%</option>
-                              <option value="5">5%</option>
-                              <option value="12">12%</option>
-                              <option value="18">18%</option>
-                              <option value="28">28%</option>
-                            </select>
-                          </td>
-                          <td>
-                            <input type="checkbox" checked={item.isGst} onChange={e => handleItemChange(idx, 'isGst', e.target.checked)} />
-                          </td>
-                          <td>
-                            {form.items.length > 1 && <button type="button" className="remove-btn" onClick={() => removeItem(idx)}>✕</button>}
-                          </td>
-                        </tr>
-                      ))}
+                      {form.items.map((item, idx) => {
+                        const sub = Number(item.quantity || 0) * Number(item.rate || 0);
+                        const gst = item.isGst ? (sub * Number(item.gstRate || 0)) / 100 : 0;
+                        const total = sub + gst;
+                        
+                        return (
+                          <tr key={idx}>
+                            <td>
+                              <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value)}>
+                                <option value="">-- Choose Product --</option>
+                                {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                              </select>
+                            </td>
+                            <td>
+                              <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value)} />
+                            </td>
+                            <td>
+                              <input type="number" step="any" className="input-field item-input sm" required value={item.rate} onChange={e => handleItemChange(idx, 'rate', e.target.value)} />
+                            </td>
+                            <td>
+                              <select className="input-field item-input sm" value={item.gstRate} onChange={e => handleItemChange(idx, 'gstRate', e.target.value)}>
+                                <option value="0">0%</option>
+                                <option value="5">5%</option>
+                                <option value="12">12%</option>
+                                <option value="18">18%</option>
+                                <option value="28">28%</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input type="checkbox" checked={item.isGst} onChange={e => handleItemChange(idx, 'isGst', e.target.checked)} />
+                            </td>
+                            <td>
+                              <input 
+                                type="number" 
+                                step="any" 
+                                className="input-field item-input sm highlight-input" 
+                                value={total ? Number(total.toFixed(2)) : ''} 
+                                onChange={e => handleTotalChange(idx, e.target.value)} 
+                              />
+                            </td>
+                            <td>
+                              {form.items.length > 1 && <button type="button" className="remove-btn" onClick={() => removeItem(idx)}>✕</button>}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -506,46 +541,62 @@ export default function Purchases() {
                   <table className="items-table">
                     <thead>
                       <tr>
-                        <th style={{ width: '40%' }}>Product</th>
-                        <th style={{ width: '15%' }}>Qty</th>
+                        <th style={{ width: '35%' }}>Product</th>
+                        <th style={{ width: '12%' }}>Qty</th>
                         <th style={{ width: '15%' }}>Rate (₹)</th>
-                        <th style={{ width: '12%' }}>GST %</th>
-                        <th style={{ width: '10%' }}>+ GST?</th>
-                        <th style={{ width: '8%' }}></th>
+                        <th style={{ width: '10%' }}>GST %</th>
+                        <th style={{ width: '8%' }}>+ GST?</th>
+                        <th style={{ width: '15%' }}>Total (₹)</th>
+                        <th style={{ width: '5%' }}></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {editForm.items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td>
-                            <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value, true)}>
-                              <option value="">-- Choose Product --</option>
-                              {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                            </select>
-                          </td>
-                          <td>
-                            <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value, true)} />
-                          </td>
-                          <td>
-                            <input type="number" step="any" className="input-field item-input sm" required value={item.rate} onChange={e => handleItemChange(idx, 'rate', e.target.value, true)} />
-                          </td>
-                          <td>
-                            <select className="input-field item-input sm" value={item.gstRate} onChange={e => handleItemChange(idx, 'gstRate', e.target.value, true)}>
-                              <option value="0">0%</option>
-                              <option value="5">5%</option>
-                              <option value="12">12%</option>
-                              <option value="18">18%</option>
-                              <option value="28">28%</option>
-                            </select>
-                          </td>
-                          <td>
-                            <input type="checkbox" checked={item.isGst} onChange={e => handleItemChange(idx, 'isGst', e.target.checked, true)} />
-                          </td>
-                          <td>
-                            {editForm.items.length > 1 && <button type="button" className="remove-btn" onClick={() => removeItem(idx, true)}>✕</button>}
-                          </td>
-                        </tr>
-                      ))}
+                      {editForm.items.map((item, idx) => {
+                        const sub = Number(item.quantity || 0) * Number(item.rate || 0);
+                        const gst = item.isGst ? (sub * Number(item.gstRate || 0)) / 100 : 0;
+                        const total = sub + gst;
+                        
+                        return (
+                          <tr key={idx}>
+                            <td>
+                              <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value, true)}>
+                                <option value="">-- Choose Product --</option>
+                                {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                              </select>
+                            </td>
+                            <td>
+                              <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value, true)} />
+                            </td>
+                            <td>
+                              <input type="number" step="any" className="input-field item-input sm" required value={item.rate} onChange={e => handleItemChange(idx, 'rate', e.target.value, true)} />
+                            </td>
+                            <td>
+                              <select className="input-field item-input sm" value={item.gstRate} onChange={e => handleItemChange(idx, 'gstRate', e.target.value, true)}>
+                                <option value="0">0%</option>
+                                <option value="5">5%</option>
+                                <option value="12">12%</option>
+                                <option value="18">18%</option>
+                                <option value="28">28%</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input type="checkbox" checked={item.isGst} onChange={e => handleItemChange(idx, 'isGst', e.target.checked, true)} />
+                            </td>
+                            <td>
+                              <input 
+                                type="number" 
+                                step="any" 
+                                className="input-field item-input sm highlight-input" 
+                                value={total ? Number(total.toFixed(2)) : ''} 
+                                onChange={e => handleTotalChange(idx, e.target.value, true)} 
+                              />
+                            </td>
+                            <td>
+                              {editForm.items.length > 1 && <button type="button" className="remove-btn" onClick={() => removeItem(idx, true)}>✕</button>}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
