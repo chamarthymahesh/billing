@@ -83,8 +83,18 @@ export default function AdminReports() {
         <div className="accordion-wrap">
           {detailedReports.length === 0 ? <div className="empty-row">No data available</div> : 
             detailedReports.map(comp => {
-              const metricTotal = getMetricValue(comp.totals);
               const items = metric === 'purchases' ? comp.purchases : comp.invoices;
+              
+              // Calculate total directly from items with rounding to ensure visual math is perfect
+              const metricTotal = items.reduce((sum, item) => {
+                let amt = 0;
+                if (metric === 'sales') amt = item.grandTotal;
+                else if (metric === 'purchases') amt = item.totalAmount;
+                else if (metric === 'profit') amt = item.totalProfit;
+                else if (metric === 'transport') amt = item.transportCharges;
+                else if (metric === 'commission') amt = item.commission;
+                return sum + Math.round((amt || 0) * 100) / 100;
+              }, 0);
               
               return (
                 <div key={comp._id} className="accordion-item" style={{ marginBottom: '10px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', overflow: 'hidden' }}>

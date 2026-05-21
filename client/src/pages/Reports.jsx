@@ -429,10 +429,13 @@ export default function Reports() {
                       {filteredInvoices.length === 0 ? (
                         <tr><td colSpan="7" className="empty-row">No invoices found for the selected range</td></tr>
                       ) : filteredInvoices.map(inv => {
-                        const profit = inv.totalProfit || 0;
-                        const revenue = inv.grandTotal || 0;
+                        const profit = Math.round((inv.totalProfit || 0) * 100) / 100;
+                        const revenue = Math.round((inv.grandTotal || 0) * 100) / 100;
                         const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : 0;
-                        const deductions = revenue - profit;
+                        const deductions = Math.round((revenue - profit) * 100) / 100;
+                        // Prevent -0.00 display
+                        const displayProfit = profit === 0 ? 0 : profit;
+                        const displayDeductions = deductions === 0 ? 0 : deductions;
                         
                         return (
                           <tr key={inv._id}>
@@ -440,12 +443,12 @@ export default function Reports() {
                             <td>{new Date(inv.date).toLocaleDateString('en-IN')}</td>
                             <td className="cust-name-cell">👤 {inv.customer?.name || 'N/A'}</td>
                             <td style={{ color: '#10b981' }}>₹{revenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td style={{ color: '#ef4444' }}>₹{deductions.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td style={{ fontWeight: 'bold', color: profit >= 0 ? '#10b981' : '#ef4444' }}>
-                              ₹{profit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <td style={{ color: '#ef4444' }}>₹{displayDeductions.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td style={{ fontWeight: 'bold', color: displayProfit >= 0 ? '#10b981' : '#ef4444' }}>
+                              ₹{displayProfit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </td>
                             <td>
-                              <span className={`badge ${profit >= 0 ? 'paid' : 'unpaid'}`}>{margin}%</span>
+                              <span className={`badge ${displayProfit >= 0 ? 'paid' : 'unpaid'}`}>{margin}%</span>
                             </td>
                           </tr>
                         );
