@@ -63,6 +63,7 @@ export default function CreateInvoice() {
   const [localSuppliers, setLocalSuppliers] = useState([]);
   const [globalSuppliers, setGlobalSuppliers] = useState([]);
   const [supplierSuggestions, setSupplierSuggestions] = useState([]);
+  const [companies, setCompanies] = useState([]); // Array of registered companies
   // Removed duplicate customer state declarations; they are defined earlier.
 
   const [form, setForm] = useState({
@@ -94,9 +95,12 @@ export default function CreateInvoice() {
     Promise.all([
       API.get('/products'),
       API.get('/invoices'),
-      API.get(`/companies/${user.companyId}`)
-    ]).then(([prodRes, invRes, compRes]) => {
+      API.get(`/companies/${user.companyId}`),
+      API.get('/companies')
+    ]).then(([prodRes, invRes, compRes, compListRes]) => {
       setProducts(prodRes.data);
+      const allCompanies = compListRes.data || [];
+      setCompanies(allCompanies);
       // Build customer map
       const customerMap = new Map();
       const sortedInvoices = [...invRes.data].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -119,9 +123,9 @@ export default function CreateInvoice() {
       const localList = Array.from(customerMap.values());
       setLocalCustomers(localList);
       setCustomerSuggestions(localList);
-      // Suppliers - reuse same data for demo (could be distinct endpoint later)
-      setLocalSuppliers(localList);
-      setSupplierSuggestions(localList);
+      // Suppliers - load from registered companies instead of local invoices
+      setLocalSuppliers(allCompanies);
+      setSupplierSuggestions(allCompanies);
       // Default notes
       if (compRes.data?.settings?.termsAndConditions) {
         setForm(f => ({ ...f, notes: compRes.data.settings.termsAndConditions }));

@@ -457,7 +457,7 @@ exports.getDetailedReports = async (req, res) => {
     
     const companies = await Company.find();
     const invoices = await Invoice.find();
-    const purchases = await Purchase.find();
+    const purchases = await Purchase.find().populate('productId', 'name sku');
     
     const detailedReports = companies.map(comp => {
       const compInvoices = invoices.filter(inv => inv.companyId.toString() === comp._id.toString());
@@ -489,7 +489,10 @@ exports.getDetailedReports = async (req, res) => {
           billNumber: p.billNumber,
           supplierName: p.supplierName,
           date: p.purchaseDate,
-          totalAmount: p.totalAmount || 0
+          totalAmount: p.totalAmount || 0,
+          productName: p.productId?.name || 'Unknown Product',
+          purchasePrice: p.rate || 0,
+          quantity: p.quantity || 0
         })).sort((a, b) => new Date(b.date) - new Date(a.date))
       };
     });

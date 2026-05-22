@@ -124,7 +124,10 @@ export default function AdminReports() {
                               <th style={{ padding: '8px', textAlign: 'left' }}>{metric === 'purchases' ? 'Bill #' : 'Invoice #'}</th>
                               <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
                               <th style={{ padding: '8px', textAlign: 'left' }}>{metric === 'purchases' ? 'Supplier' : 'Customer'}</th>
-                              <th style={{ padding: '8px', textAlign: 'right' }}>Amount</th>
+                              {metric === 'purchases' && <th style={{ padding: '8px', textAlign: 'left' }}>Product</th>}
+                              {metric === 'purchases' && <th style={{ padding: '8px', textAlign: 'right' }}>Qty</th>}
+                              {metric === 'purchases' && <th style={{ padding: '8px', textAlign: 'right' }}>Unit Price</th>}
+                              <th style={{ padding: '8px', textAlign: 'right' }}>{metric === 'purchases' ? 'Total Amount' : 'Amount'}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -144,6 +147,15 @@ export default function AdminReports() {
                                   <td style={{ padding: '8px' }}>{metric === 'purchases' ? item.billNumber : item.invoiceNumber}</td>
                                   <td style={{ padding: '8px' }}>{new Date(item.date).toLocaleDateString()}</td>
                                   <td style={{ padding: '8px' }}>{metric === 'purchases' ? item.supplierName : item.customerName}</td>
+                                  {metric === 'purchases' && (
+                                    <td style={{ padding: '8px', color: '#94a3b8' }}>{item.productName || 'N/A'}</td>
+                                  )}
+                                  {metric === 'purchases' && (
+                                    <td style={{ padding: '8px', textAlign: 'right' }}>{item.quantity || 0}</td>
+                                  )}
+                                  {metric === 'purchases' && (
+                                    <td style={{ padding: '8px', textAlign: 'right' }}>₹{(item.purchasePrice || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                  )}
                                   <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>
                                     ₹{(itemAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                   </td>
