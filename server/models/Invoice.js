@@ -43,6 +43,7 @@ const invoiceSchema = new mongoose.Schema({
   grandTotal: { type: Number, required: true },
   totalProfit: { type: Number, default: 0 },
   isGst: { type: Boolean, default: false },
+  stockDeficit: { type: Boolean, default: false },
   status: { type: String, enum: ['paid', 'unpaid', 'partially_paid'], default: 'unpaid' },
   materialDeliveryStatus: { type: String, enum: ['Pending', 'Delivered'], default: 'Pending' },
   notes: String,

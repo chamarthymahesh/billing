@@ -131,6 +131,7 @@ exports.createInvoice = async (req, res) => {
     // Include transport charges in the grand total calculation
     const grandTotal = subTotal + totalGst + (Number(adjustment) || 0) + (Number(transportCharges) || 0);
 
+    let stockDeficit = false;
     const invoice = await Invoice.create({
       ...req.body,
       invoiceNumber,
@@ -138,7 +139,8 @@ exports.createInvoice = async (req, res) => {
       subTotal,
       totalGst,
       grandTotal,
-      totalProfit
+      totalProfit,
+      stockDeficit: false // default, will update if needed
     });
 
     // Adjust product stock based on invoice items (allow negative stock)
@@ -147,7 +149,20 @@ exports.createInvoice = async (req, res) => {
       if (prod) {
         prod.stock = (prod.stock || 0) - Number(item.quantity);
         await prod.save();
+        if (prod.stock < 0) stockDeficit = true;
       }
+    }
+
+    if (stockDeficit) {
+      await Invoice.findByIdAndUpdate(invoice._id, { stockDeficit: true });
+      
+      // If deficit, upsert a record in DeficitCompany for this company
+      const DeficitCompany = require('../models/DeficitCompany');
+      await DeficitCompany.updateOne(
+        { companyId },
+        { $set: { lastDeficitAt: new Date() } },
+        { upsert: true }
+      );
     }
 
     // Increment company invoice number
@@ -500,39 +515,26 @@ exports.updateMaterialDeliveryStatus = async (req, res) => {
   }
 };
 
-exports.getGlobalCustomers = async (req, res) => {
+exports.getDeficitCompanies = async (req, res) => {
   try {
-    const invoices = await Invoice.find({}).sort({ date: -1, createdAt: -1 });
-    const customerMap = new Map();
-    invoices.forEach(inv => {
-      if (inv.customer?.name) {
-        const nameLower = inv.customer.name.toLowerCase().trim();
-        if (!customerMap.has(nameLower)) {
-          customerMap.set(nameLower, { 
-            name: inv.customer.name,
-            address: inv.customer.address || '',
-            phone: inv.customer.phone || '',
-            gstin: inv.customer.gstin || '',
-            state: inv.customer.state || '',
-            placeOfSupply: inv.customer.placeOfSupply || '',
-            shippingAddress: inv.customer.shippingAddress || '',
-            sameAsBilling: inv.customer.sameAsBilling !== undefined ? inv.customer.sameAsBilling : true
-          });
-        } else {
-          const existing = customerMap.get(nameLower);
-          ['state', 'address', 'phone', 'gstin', 'placeOfSupply', 'shippingAddress'].forEach(field => {
-            if (!existing[field] && inv.customer[field]) {
-              existing[field] = inv.customer[field];
-            }
-          });
-        }
-      }
-    });
-    res.json(Array.from(customerMap.values()));
+    // Only superadmin can view deficit companies
+    if (req.user.role !== 'superadmin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    const DeficitCompany = require('../models/DeficitCompany');
+    const deficitCompanies = await DeficitCompany.find().populate('companyId', 'name gstin');
+    const result = deficitCompanies.map(dc => ({
+      companyId: dc.companyId._id,
+      companyName: dc.companyId.name,
+      gstin: dc.companyId.gstin,
+      lastDeficitAt: dc.lastDeficitAt
+    }));
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 
