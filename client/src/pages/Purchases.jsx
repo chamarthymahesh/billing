@@ -84,8 +84,17 @@ export default function Purchases() {
   const handleSupplierName = (val, isEdit = false) => {
     let gstin = isEdit ? editForm.supplierGstin : form.supplierGstin;
     const match = supplierSuggestions.find(s => s.name.toLowerCase() === val.toLowerCase());
-    if (match && match.gstin) {
-      gstin = match.gstin;
+    if (match) {
+      gstin = match.gstin || '';
+    } else {
+      if (!val.trim()) {
+        gstin = '';
+      } else {
+        const wasMatched = supplierSuggestions.find(s => s.gstin && s.gstin === (isEdit ? editForm.supplierGstin : form.supplierGstin));
+        if (wasMatched && wasMatched.name.toLowerCase() !== val.toLowerCase()) {
+          gstin = '';
+        }
+      }
     }
     if (isEdit) {
       setEditForm({ ...editForm, supplierName: val, supplierGstin: gstin });
@@ -417,27 +426,24 @@ export default function Purchases() {
                       </select>
                     </div>
                   )}
-                     <div className="form-group">
+                    <div className="form-group">
                       <label>Supplier Name *</label>
-                      {supplierSuggestions.length > 0 && (
-                        <select className="input-field highlight-input" required value={form.supplierName || ''} onChange={e => {
-                          const val = e.target.value;
-                          if (val === 'NEW') {
-                            setForm(f => ({ ...f, supplierName: '' }));
-                          } else {
-                            handleSupplierName(val);
-                          }
-                        }}>
-                          <option value="" disabled>Select a supplier...</option>
-                          {supplierSuggestions.map((s, i) => (
-                            <option key={i} value={s.name}>{s.name} {s.gstin ? `(${s.gstin})` : ''}</option>
-                          ))}
-                          <option value="NEW">➕ Add New Supplier</option>
-                        </select>
-                      )}
-                      {(form.supplierName === '' || supplierSuggestions.length === 0 || form.supplierName === 'NEW') && (
-                        <input className="input-field highlight-input" placeholder="Type new supplier name..." required value={form.supplierName} onChange={e => setForm(f => ({ ...f, supplierName: e.target.value }))} />
-                      )}
+                      <input 
+                        type="text" 
+                        list="add-supplier-options" 
+                        className="input-field highlight-input" 
+                        placeholder="Type or select supplier..." 
+                        required 
+                        value={form.supplierName} 
+                        onChange={e => handleSupplierName(e.target.value)} 
+                      />
+                      <datalist id="add-supplier-options">
+                        {supplierSuggestions.map((s, i) => (
+                          <option key={i} value={s.name}>
+                            {s.gstin ? `GSTIN: ${s.gstin}` : ''}
+                          </option>
+                        ))}
+                      </datalist>
                     </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
@@ -588,25 +594,22 @@ export default function Purchases() {
                   )}
                   <div className="form-group">
                     <label>Supplier Name *</label>
-                    {supplierSuggestions.length > 0 && (
-                      <select className="input-field highlight-input" required value={editForm.supplierName || ''} onChange={e => {
-                        const val = e.target.value;
-                        if (val === 'NEW') {
-                          setEditForm(f => ({ ...f, supplierName: '' }));
-                        } else {
-                          handleSupplierName(val, true);
-                        }
-                      }}>
-                        <option value="" disabled>Select a supplier...</option>
-                        {supplierSuggestions.map((s, i) => (
-                          <option key={i} value={s.name}>{s.name} {s.gstin ? `(${s.gstin})` : ''}</option>
-                        ))}
-                        <option value="NEW">➕ Add New Supplier</option>
-                      </select>
-                    )}
-                    {(editForm.supplierName === '' || supplierSuggestions.length === 0 || editForm.supplierName === 'NEW') && (
-                      <input className="input-field highlight-input" placeholder="Type new supplier name..." required value={editForm.supplierName} onChange={e => setEditForm(f => ({ ...f, supplierName: e.target.value }))} />
-                    )}
+                    <input 
+                      type="text" 
+                      list="edit-supplier-options" 
+                      className="input-field highlight-input" 
+                      placeholder="Type or select supplier..." 
+                      required 
+                      value={editForm.supplierName} 
+                      onChange={e => handleSupplierName(e.target.value, true)} 
+                    />
+                    <datalist id="edit-supplier-options">
+                      {supplierSuggestions.map((s, i) => (
+                        <option key={i} value={s.name}>
+                          {s.gstin ? `GSTIN: ${s.gstin}` : ''}
+                        </option>
+                      ))}
+                    </datalist>
                   </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
