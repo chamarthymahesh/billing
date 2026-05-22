@@ -1,5 +1,6 @@
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
+const Product = require('../models/Product');
 
 /**
  * Calculate net profit for an invoice.
@@ -139,6 +140,15 @@ exports.createInvoice = async (req, res) => {
       grandTotal,
       totalProfit
     });
+
+    // Adjust product stock based on invoice items (allow negative stock)
+    for (const item of items) {
+      const prod = await Product.findById(item.productId);
+      if (prod) {
+        prod.stock = (prod.stock || 0) - Number(item.quantity);
+        await prod.save();
+      }
+    }
 
     // Increment company invoice number
     company.settings.nextInvoiceNumber += 1;
