@@ -96,7 +96,7 @@ export default function CreateInvoice() {
       API.get('/products'),
       API.get('/invoices'),
       API.get(`/companies/${user.companyId}`),
-      API.get('/companies')
+      API.get('/companies/list')
     ]).then(([prodRes, invRes, compRes, compListRes]) => {
       setProducts(prodRes.data);
       const allCompanies = compListRes.data || [];
