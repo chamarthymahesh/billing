@@ -129,7 +129,7 @@ exports.createInvoice = async (req, res) => {
     // Compute total profit including transport and commission deductions
     totalProfit = totalProfit - (Number(transportCharges) || 0) - (Number(commission) || 0);
     // Include transport charges in the grand total calculation
-    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0) + (Number(transportCharges) || 0);
+    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0);
 
     let stockDeficit = false;
     const invoice = await Invoice.create({
@@ -402,7 +402,7 @@ exports.updateInvoice = async (req, res) => {
 
     // Compute total profit including transport and commission deductions
     totalProfit = totalProfit - (Number(transportCharges) || 0) - (Number(commission) || 0);
-    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0) + (Number(transportCharges) || 0);
+    const grandTotal = subTotal + totalGst + (Number(adjustment) || 0);
     
     const invoice = await Invoice.findByIdAndUpdate(
       req.params.id,
