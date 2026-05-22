@@ -535,6 +535,32 @@ exports.getDeficitCompanies = async (req, res) => {
   }
 };
 
+// Return all unique customers across all invoices (for superadmin global dropdowns)
+exports.getGlobalCustomers = async (req, res) => {
+  try {
+    const invoices = await Invoice.find({}, 'customer');
+    const customerMap = {};
+    invoices.forEach(inv => {
+      if (inv.customer && inv.customer.name) {
+        const key = inv.customer.name.trim().toLowerCase();
+        if (!customerMap[key]) {
+          customerMap[key] = {
+            name: inv.customer.name,
+            phone: inv.customer.phone || '',
+            address: inv.customer.address || '',
+            gstin: inv.customer.gstin || '',
+            state: inv.customer.state || '',
+            placeOfSupply: inv.customer.placeOfSupply || ''
+          };
+        }
+      }
+    });
+    res.json(Object.values(customerMap));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 
 
