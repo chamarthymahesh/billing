@@ -220,25 +220,12 @@ export default function CreateInvoice() {
     }
   };
 
-  // Supplier toggle – reuse the same global endpoint for demo purposes
   const toggleGlobalSuppliers = async (checked) => {
     setUseGlobalSuppliers(checked);
     if (checked) {
-      if (globalSuppliers.length === 0) {
-        try {
-          const res = await API.get('/invoices/global-customers');
-          setGlobalSuppliers(res.data);
-          setSupplierSuggestions(res.data);
-        } catch (err) {
-          console.error("Failed to fetch global suppliers:", err);
-          alert("Error loading global suppliers.");
-          setUseGlobalSuppliers(false);
-        }
-      } else {
-        setSupplierSuggestions(globalSuppliers);
-      }
+      setSupplierSuggestions(companies);
     } else {
-      setSupplierSuggestions(localSuppliers);
+      setSupplierSuggestions([]);
     }
   };
 
@@ -535,17 +522,15 @@ export default function CreateInvoice() {
           <div className="form-grid-2">
             <div className="form-group">
               <label>Supplier Name *</label>
-              {supplierSuggestions.length > 0 && (
+              {companies.length > 0 ? (
                 <select className="input-field" required value={form.supplier?.name || ''} onChange={e => handleSupplierSelect(e.target.value)}>
                   <option value="" disabled>Select a supplier...</option>
-                  {supplierSuggestions.map((s, i) => (
-                    <option key={i} value={s.name}>{s.name} {s.phone ? `(${s.phone})` : ''}</option>
+                  {companies.map((c, i) => (
+                    <option key={i} value={c.name}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
                   ))}
-                  <option value="NEW">➕ Add New Supplier</option>
                 </select>
-              )}
-              {(form.supplier?.name === '' || supplierSuggestions.length === 0) && (
-                <input className="input-field" placeholder="Type new supplier name..." required value={form.supplier?.name || ''} onChange={e => setForm(f => ({ ...f, supplier: { ...f.supplier, name: e.target.value } }))} />
+              ) : (
+                <div className="empty-row">No registered suppliers available.</div>
               )}
             </div>
             <div className="form-group">
