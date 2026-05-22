@@ -67,20 +67,7 @@ export default function InvoiceDetail() {
                 <span className="meta-value">{invoice.gemContractNumber}</span>
               </div>
             )}
-            <div className={`status-tag status-${invoice.status}`}>
-              {invoice.status.replace('_', ' ').toUpperCase()}
-            </div>
-            <div 
-              className="status-tag"
-              style={{
-                background: invoice.materialDeliveryStatus === 'Delivered' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                color: invoice.materialDeliveryStatus === 'Delivered' ? '#10b981' : '#f59e0b',
-                border: invoice.materialDeliveryStatus === 'Delivered' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)',
-                marginTop: '8px'
-              }}
-            >
-              DELIVERY: {(invoice.materialDeliveryStatus || 'Pending').toUpperCase()}
-            </div>
+
           </div>
         </div>
 
