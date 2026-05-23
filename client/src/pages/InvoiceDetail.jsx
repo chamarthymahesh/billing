@@ -20,6 +20,10 @@ export default function InvoiceDetail() {
   if (loading) return <Layout><div className="loading-state">Loading invoice...</div></Layout>;
   if (!invoice) return <Layout><div>Invoice not found</div></Layout>;
 
+  const sellerState = invoice.companyId?.state || '';
+  const deliveryState = invoice.customer?.placeOfSupply || invoice.customer?.state || '';
+  const isInterState = sellerState && deliveryState && sellerState.trim().toLowerCase() !== deliveryState.trim().toLowerCase();
+
   const handlePrint = () => {
     window.print();
   };
@@ -151,14 +155,23 @@ export default function InvoiceDetail() {
             </div>
             {invoice.isGst && (
               <>
-                <div className="summary-row">
-                  <span>CGST:</span>
-                  <span>₹{(invoice.totalGst / 2).toFixed(2)}</span>
-                </div>
-                <div className="summary-row">
-                  <span>SGST:</span>
-                  <span>₹{(invoice.totalGst / 2).toFixed(2)}</span>
-                </div>
+                {isInterState ? (
+                  <div className="summary-row">
+                    <span>IGST:</span>
+                    <span>₹{invoice.totalGst.toFixed(2)}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="summary-row">
+                      <span>CGST:</span>
+                      <span>₹{(invoice.totalGst / 2).toFixed(2)}</span>
+                    </div>
+                    <div className="summary-row">
+                      <span>SGST:</span>
+                      <span>₹{(invoice.totalGst / 2).toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="summary-row highlight">
                   <span>Total GST:</span>
                   <span>₹{invoice.totalGst.toFixed(2)}</span>

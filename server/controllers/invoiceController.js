@@ -84,7 +84,7 @@ exports.createInvoice = async (req, res) => {
 
     const invoiceNumber = `${company.settings.invoicePrefix}/${company.settings.fyPrefix}/${String(company.settings.nextInvoiceNumber).padStart(3, '0')}`;
     
-    const isInterState = company.state?.toLowerCase() !== (req.body.customer?.placeOfSupply || req.body.customer?.state)?.toLowerCase();
+    const isInterState = company.state?.trim().toLowerCase() !== (req.body.customer?.placeOfSupply || req.body.customer?.state)?.trim().toLowerCase();
     
     // Calculate totals
     let subTotal = 0;
@@ -358,7 +358,7 @@ exports.updateInvoice = async (req, res) => {
     const company = await Company.findById(req.body.companyId);
     if (!company) return res.status(404).json({ message: 'Company not found' });
 
-    const isInterState = company.state?.toLowerCase() !== (req.body.customer?.placeOfSupply || req.body.customer?.state)?.toLowerCase();
+    const isInterState = company.state?.trim().toLowerCase() !== (req.body.customer?.placeOfSupply || req.body.customer?.state)?.trim().toLowerCase();
     
     // Calculate totals
     let subTotal = 0;

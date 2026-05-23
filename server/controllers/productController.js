@@ -6,6 +6,9 @@ exports.createProduct = async (req, res) => {
     const product = await Product.create({ ...req.body, companyId });
     res.status(201).json(product);
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern && error.keyPattern.sku) {
+      return res.status(400).json({ message: 'A product with this SKU already exists.' });
+    }
     res.status(500).json({ message: error.message });
   }
 };

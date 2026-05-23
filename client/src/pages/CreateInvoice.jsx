@@ -64,6 +64,7 @@ export default function CreateInvoice() {
   const [globalSuppliers, setGlobalSuppliers] = useState([]);
   const [supplierSuggestions, setSupplierSuggestions] = useState([]);
   const [companies, setCompanies] = useState([]); // Array of registered companies
+  const [currentCompany, setCurrentCompany] = useState(null);
   // Removed duplicate customer state declarations; they are defined earlier.
 
   const [form, setForm] = useState({
@@ -99,6 +100,7 @@ export default function CreateInvoice() {
       API.get('/companies/list')
     ]).then(([prodRes, invRes, compRes, compListRes]) => {
       setProducts(prodRes.data);
+      setCurrentCompany(compRes.data);
       const allCompanies = compListRes.data || [];
       setCompanies(allCompanies);
       // Build customer map
@@ -294,6 +296,10 @@ export default function CreateInvoice() {
     const gst = form.isGst ? (amount * Number(item.gstRate)) / 100 : 0;
     return { amount, gst, total: amount + gst };
   };
+
+  const sellerState = currentCompany?.state || '';
+  const deliveryState = form.customer?.placeOfSupply || form.customer?.state || '';
+  const isInterState = sellerState && deliveryState && sellerState.trim().toLowerCase() !== deliveryState.trim().toLowerCase();
 
   const subTotal = form.items.reduce((s, i) => s + calcItem(i).amount, 0);
   const totalGst = form.isGst ? form.items.reduce((s, i) => s + calcItem(i).gst, 0) : 0;
@@ -712,8 +718,14 @@ export default function CreateInvoice() {
               <div className="summary-row"><span>Subtotal</span><span>₹{subTotal.toFixed(2)}</span></div>
               {form.isGst && (
                 <>
-                  <div className="summary-row"><span>CGST</span><span>₹{(totalGst / 2).toFixed(2)}</span></div>
-                  <div className="summary-row"><span>SGST</span><span>₹{(totalGst / 2).toFixed(2)}</span></div>
+                  {isInterState ? (
+                    <div className="summary-row"><span>IGST</span><span>₹{totalGst.toFixed(2)}</span></div>
+                  ) : (
+                    <>
+                      <div className="summary-row"><span>CGST</span><span>₹{(totalGst / 2).toFixed(2)}</span></div>
+                      <div className="summary-row"><span>SGST</span><span>₹{(totalGst / 2).toFixed(2)}</span></div>
+                    </>
+                  )}
                   <div className="summary-row"><span>Total GST</span><span>₹{totalGst.toFixed(2)}</span></div>
                 </>
               )}
