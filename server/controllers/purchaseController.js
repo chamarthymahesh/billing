@@ -187,3 +187,44 @@ exports.deletePurchaseBill = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getGlobalSuppliers = async (req, res) => {
+  try {
+    const Company = require('../models/Company');
+    const purchases = await Purchase.find({}, 'supplierName supplierGstin');
+    const supplierMap = {};
+    
+    purchases.forEach(p => {
+      if (p.supplierName) {
+        const key = p.supplierName.trim().toLowerCase();
+        if (!supplierMap[key]) {
+          supplierMap[key] = {
+            name: p.supplierName.trim(),
+            gstin: (p.supplierGstin || '').trim()
+          };
+        }
+      }
+    });
+
+    const companies = await Company.find({}, 'name gstin');
+    companies.forEach(c => {
+      if (c.name) {
+        const key = c.name.trim().toLowerCase();
+        if (!supplierMap[key]) {
+          supplierMap[key] = {
+            name: c.name.trim(),
+            gstin: (c.gstin || '').trim()
+          };
+        } else if (!supplierMap[key].gstin && c.gstin) {
+          supplierMap[key].gstin = c.gstin.trim();
+        }
+      }
+    });
+
+    res.json(Object.values(supplierMap));
+  } catch (error) {
+    console.error('GET_GLOBAL_SUPPLIERS_ERROR:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
