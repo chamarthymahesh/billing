@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
-const menuItems = [
+export const menuItems = [
   { label: 'Dashboard', icon: '📊', path: '/dashboard', roles: ['companyadmin'] },
   { label: 'Dashboard', icon: '📊', path: '/super-admin/dashboard', roles: ['superadmin'] },
   { label: 'Companies', icon: '🏢', path: '/super-admin/companies', roles: ['superadmin'] },
@@ -12,13 +11,12 @@ const menuItems = [
   { label: 'Create Invoice', icon: '✏️', path: '/invoices/create', roles: ['companyadmin'] },
   { label: 'Purchases', icon: '🛒', path: '/purchases', roles: ['companyadmin', 'superadmin'] },
   { label: 'Products', icon: '📦', path: '/products', roles: ['companyadmin', 'superadmin'] },
-  { label: 'Reports', icon: '📈', path: '/reports', roles: ['companyadmin'] },
+  { label: 'Reports', icon: '📈', path: '/reports', roles: [] },
   { label: 'Transport', icon: '🚚', path: '/transport', roles: ['companyadmin'] },
   { label: 'Employees', icon: '👥', path: '/employees', roles: ['companyadmin'] },
   { label: 'Settings', icon: '⚙️', path: '/settings', roles: ['companyadmin', 'superadmin'] },
   { label: 'All Invoices', icon: '🧾', path: '/super-admin/invoices', roles: ['superadmin'] },
-  { label: 'Global Stock', icon: '🏢', path: '/super-admin/global-stock', roles: ['superadmin'] },
-  { label: 'Reports', icon: '📈', path: '/super-admin/reports', roles: ['superadmin'] },
+  { label: 'Global Stock', icon: '🏢', path: '/super-admin/global-stock', roles: ['superadmin'] }
 ];
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,8 +26,15 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+    // Determine menu items to display based on logged-in user
+  const filteredMenu = menuItems.filter(item => {
+  // Items with no role restriction are always shown
+  if (item.roles.length === 0) return true;
+  // If a user is logged in, check their role
+  return user && item.roles.includes(user.role);
+});
+console.log('Filtered menu:', filteredMenu);
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(user?.role));
 
   return (
     <motion.div 
@@ -101,10 +106,11 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <button id="logout-btn" className="logout-btn" onClick={() => { logout(); navigate('/login'); }}>
-        <span>🚪</span>
-        {!collapsed && <span>Logout</span>}
-      </button>
+        <button id="logout-btn" className="logout-btn" onClick={() => { console.log('Logout button clicked'); logout(); navigate('/login', { replace: true }); }}>
+          <span>🚪</span>
+          {!collapsed && <span>Logout</span>}
+        </button>
+
     </motion.div>
   );
 }

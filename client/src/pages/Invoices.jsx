@@ -26,7 +26,8 @@ export default function Invoices() {
     if (statusFilter !== 'all') list = list.filter(i => i.status === statusFilter);
     if (search) list = list.filter(i =>
       i.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
-      i.customer?.name?.toLowerCase().includes(search.toLowerCase())
+      i.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      i.gemContractNumber?.toLowerCase().includes(search.toLowerCase())
     );
     setFiltered(list);
   }, [search, statusFilter, invoices]);
@@ -75,13 +76,15 @@ export default function Invoices() {
           <input
             id="invoice-search"
             className="input-field search-input"
-            placeholder="Search by invoice # or customer..."
+            style={{ flex: 1, minWidth: '200px' }}
+            placeholder="Search by invoice #, customer, or GeM contract..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
           <select
             id="status-filter"
             className="input-field filter-select"
+            style={{ width: '200px' }}
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
           >
@@ -100,6 +103,7 @@ export default function Invoices() {
                   <th>Invoice #</th>
                   <th>Date</th>
                   <th>Customer</th>
+                  <th>GeM Contract</th>
                   <th>Type</th>
                   <th>Subtotal</th>
                   <th>GST</th>
@@ -112,7 +116,7 @@ export default function Invoices() {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="11" className="empty-row">No invoices found</td></tr>
+                  <tr><td colSpan="12" className="empty-row">No invoices found</td></tr>
                 ) : filtered.map(inv => {
                   if (!inv) return null;
                   return (
@@ -120,6 +124,7 @@ export default function Invoices() {
                       <td className="inv-num-cell">{inv.invoiceNumber}</td>
                       <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-IN') : 'N/A'}</td>
                       <td>{inv.customer?.name || 'N/A'}</td>
+                      <td>{inv.gemContractNumber || '-'}</td>
                       <td><span className={`type-badge ${inv.isGst ? 'gst' : 'nongst'}`}>{inv.isGst ? 'GST' : 'Non-GST'}</span></td>
                       <td>₹{(inv.subTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td>₹{(inv.totalGst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>

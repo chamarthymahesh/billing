@@ -1,6 +1,7 @@
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 const Product = require('../models/Product');
+const Purchase = require('../models/Purchase');
 
 /**
  * Calculate net profit for an invoice.

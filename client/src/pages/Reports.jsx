@@ -9,6 +9,7 @@ import './Reports.css';
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#3b82f6', '#ec4899'];
 
 export default function Reports() {
+  console.log('Reports component rendered');
   const [stats, setStats] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [activeTab, setActiveTab] = useState('overview'); // overview, commission, gstr1, pnl

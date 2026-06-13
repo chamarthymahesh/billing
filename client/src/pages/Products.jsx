@@ -37,7 +37,7 @@ export default function Products() {
 
   const fetchProducts = () => {
     setLoading(true);
-    API.get('/products').then(r => setProducts(r.data)).finally(() => setLoading(false));
+    API.get('/products?filter=purchased').then(r => setProducts(r.data)).finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchProducts(); }, []);

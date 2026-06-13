@@ -337,7 +337,12 @@ export default function CreateInvoice() {
       }
       navigate('/invoices');
     } catch (err) {
-      alert(err.response?.data?.message || (id ? 'Error updating invoice' : 'Error creating invoice'));
+      const msg = err.response?.data?.message || '';
+      if (err.response?.status === 400 && msg.includes('match purchased products')) {
+        alert('⚠️ ACTION REQUIRED ⚠️\n\nYou are trying to bill products that you have NOT purchased yet (or you do not have enough stock purchased).\n\nPlease go to "Purchases" and create a purchase record for these products first!');
+      } else {
+        alert(msg || (id ? 'Error updating invoice' : 'Error creating invoice'));
+      }
     } finally {
       setLoading(false);
     }

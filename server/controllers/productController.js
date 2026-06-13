@@ -1,4 +1,6 @@
 const Product = require('../models/Product');
+const Purchase = require('../models/Purchase');
+const Invoice = require('../models/Invoice');
 
 exports.createProduct = async (req, res) => {
   try {
@@ -15,7 +17,26 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    // Return all products globally to all users
+    if (req.query.filter === 'purchased' && req.user.companyId) {
+      const [purchases, invoices] = await Promise.all([
+        Purchase.find({ companyId: req.user.companyId }),
+        Invoice.find({ companyId: req.user.companyId })
+      ]);
+      
+      const productIds = new Set();
+      purchases.forEach(p => p.productId && productIds.add(p.productId.toString()));
+      invoices.forEach(inv => {
+        if (inv.items) {
+          inv.items.forEach(item => {
+            if (item.productId) productIds.add(item.productId.toString());
+          });
+        }
+      });
+      
+      const products = await Product.find({ _id: { $in: Array.from(productIds) } });
+      return res.json(products);
+    }
+    // Return all products globally to all users by default
     const products = await Product.find({});
     res.json(products);
   } catch (error) {

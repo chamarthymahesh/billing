@@ -10,7 +10,8 @@
   top: 0;
   left: 0;
   z-index: 100;
-  overflow: hidden;
+  overflow-y: auto; /* Enable vertical scrolling for long menus */
+  overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
 .sidebar.collapsed {
