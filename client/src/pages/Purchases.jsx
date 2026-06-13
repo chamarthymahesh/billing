@@ -33,6 +33,7 @@ export default function Purchases() {
     items: [{ ...EMPTY_ITEM }]
   });
   const [editForm, setEditForm] = useState(null);
+  const [search, setSearch] = useState('');
 
   const fetchPurchases = async () => {
     try {
@@ -350,6 +351,18 @@ export default function Purchases() {
   }, [purchases]);
 
   const totalPurchaseValue = groupedPurchases.reduce((sum, g) => sum + g.totalAmount, 0);
+
+  // Filter grouped purchases by product name, bill number, or supplier
+  const filteredGroupedPurchases = useMemo(() => {
+    if (!search.trim()) return groupedPurchases;
+    const q = search.toLowerCase().trim();
+    return groupedPurchases.filter(g => {
+      if (g.billNumber?.toLowerCase().includes(q)) return true;
+      if (g.supplierName?.toLowerCase().includes(q)) return true;
+      // Check if any item's product name matches
+      return g.items.some(item => item.productId?.name?.toLowerCase().includes(q));
+    });
+  }, [groupedPurchases, search]);
 
   const calculatedFormTotal = useMemo(() => {
     let itemsSum = 0;
@@ -825,6 +838,19 @@ export default function Purchases() {
 
       <div className="glass-card">
         <h2 className="section-title">Purchase History (Grouped by Bill)</h2>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+          <input
+            id="purchase-search"
+            className="input-field search-input"
+            style={{ flex: 1 }}
+            placeholder="🔍 Search by product name, bill no, or supplier..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="btn-secondary" style={{ padding: '8px 16px', whiteSpace: 'nowrap' }} onClick={() => setSearch('')}>✕ Clear</button>
+          )}
+        </div>
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -843,10 +869,10 @@ export default function Purchases() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={user?.role === 'superadmin' ? 9 : 8} className="loading-state">Loading purchases...</td></tr>
-              ) : groupedPurchases.length === 0 ? (
-                <tr><td colSpan={user?.role === 'superadmin' ? 9 : 8} className="empty-row">No purchases recorded yet.</td></tr>
+              ) : filteredGroupedPurchases.length === 0 ? (
+                <tr><td colSpan={user?.role === 'superadmin' ? 9 : 8} className="empty-row">{search ? `No purchases found matching "${search}"` : 'No purchases recorded yet.'}</td></tr>
               ) : (
-                groupedPurchases.map(g => (
+                filteredGroupedPurchases.map(g => (
                   <tr key={g._id}>
                     <td>{new Date(g.purchaseDate).toLocaleDateString()}</td>
                     <td><div className="badge">{g.billNumber}</div></td>
