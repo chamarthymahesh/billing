@@ -83,6 +83,33 @@ exports.createInvoice = async (req, res) => {
     const company = await Company.findById(companyId);
     if (!company) return res.status(404).json({ message: 'Company not found' });
 
+    // ------- Purchase validation -------
+    // Ensure every product in the invoice has at least one purchase record for this company
+    const productIds = items.map(it => it.productId).filter(Boolean);
+    if (productIds.length > 0) {
+      const purchases = await Purchase.find({
+        companyId: companyId,
+        productId: { $in: productIds }
+      }).select('productId');
+      const purchasedSet = new Set(purchases.map(p => p.productId?.toString()));
+      const missingProducts = [];
+      // Populate missing product names for a clearer message (fetch once)
+      const allProducts = await Product.find({ _id: { $in: productIds } }).select('name');
+      const prodMap = {};
+      allProducts.forEach(p => { prodMap[p._id.toString()] = p.name; });
+      productIds.forEach(pid => {
+        if (!purchasedSet.has(pid.toString())) {
+          missingProducts.push(prodMap[pid] || pid);
+        }
+      });
+      if (missingProducts.length) {
+        return res.status(400).json({
+          message: `These products have no purchase records for this company: ${missingProducts.join(', ')}. Please create purchase invoices first.`
+        });
+      }
+    }
+    // -----------------------------------
+
     const invoiceNumber = `${company.settings.invoicePrefix}/${company.settings.fyPrefix}/${String(company.settings.nextInvoiceNumber).padStart(3, '0')}`;
     
     const isInterState = company.state?.trim().toLowerCase() !== (req.body.customer?.placeOfSupply || req.body.customer?.state)?.trim().toLowerCase();

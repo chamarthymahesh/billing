@@ -209,7 +209,9 @@ export default function Purchases() {
       
       await Promise.all(promises);
       setShowForm(false);
+      // Refresh purchases and also the global product list, so newly purchased products appear in the Products view
       fetchPurchases();
+      fetchProducts();
       setForm({
         companyId: '',
         supplierName: '', supplierGstin: '', billNumber: '',
