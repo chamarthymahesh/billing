@@ -15,6 +15,10 @@ export default function SuperAdmin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [globalStats, setGlobalStats] = useState(null);
   const [companyProfits, setCompanyProfits] = useState({});
+  const [resetModal, setResetModal] = useState(null); // { companyId, companyName }
+  const [newPassword, setNewPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMsg, setResetMsg] = useState('');
 
   const filteredCompanies = companies.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -87,6 +91,31 @@ export default function SuperAdmin() {
   const viewCompanyInvoices = (id) => {
     // Navigate to a filtered invoices view (to be implemented/enhanced)
     navigate(`/super-admin/invoices?companyId=${id}`);
+  };
+
+  const openResetModal = (c) => {
+    setResetModal({ companyId: c._id, companyName: c.name });
+    setNewPassword('');
+    setResetMsg('');
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 4) {
+      setResetMsg('Password must be at least 4 characters.');
+      return;
+    }
+    setResetLoading(true);
+    setResetMsg('');
+    try {
+      await API.put(`/companies/${resetModal.companyId}/reset-password`, { newPassword });
+      setResetMsg('✅ Password reset successfully!');
+      setTimeout(() => setResetModal(null), 1500);
+    } catch (err) {
+      setResetMsg('❌ ' + (err.response?.data?.message || 'Error resetting password'));
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -164,6 +193,52 @@ export default function SuperAdmin() {
         )}
       </AnimatePresence>
 
+      {/* Reset Password Modal */}
+      <AnimatePresence>
+        {resetModal && (
+          <div className="modal-overlay">
+            <motion.div
+              className="modal glass-card"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <div className="modal-header">
+                <h2>🔑 Reset Password</h2>
+                <button className="close-btn" onClick={() => setResetModal(null)}>✕</button>
+              </div>
+              <p style={{ marginBottom: '1rem', opacity: 0.75 }}>
+                Set a new password for <strong>{resetModal.companyName}</strong>'s admin account.
+              </p>
+              <form onSubmit={handleResetPassword} className="modal-form">
+                <div className="form-group">
+                  <label>New Password *</label>
+                  <input
+                    type="text"
+                    className="input-field highlight-input"
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                {resetMsg && (
+                  <p style={{ color: resetMsg.startsWith('✅') ? '#4ade80' : '#f87171', marginTop: '0.5rem' }}>
+                    {resetMsg}
+                  </p>
+                )}
+                <div className="modal-footer">
+                  <button type="button" className="btn-secondary" onClick={() => setResetModal(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary" disabled={resetLoading}>
+                    {resetLoading ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="glass-card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="section-title">Registered Companies</h2>
@@ -210,6 +285,7 @@ export default function SuperAdmin() {
                         <div className="action-btns">
                           <button className="action-btn-icon view" onClick={() => viewCompanyInvoices(c._id)} title="View Invoices">👁️</button>
                           <button className="action-btn-icon edit" onClick={() => openEdit(c)} title="Edit">✏️</button>
+                          <button className="action-btn-icon" style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa' }} onClick={() => openResetModal(c)} title="Reset Password">🔑</button>
                           <button className="action-btn-icon del" onClick={() => handleDelete(c._id)} title="Delete">🗑️</button>
                         </div>
                       </td>

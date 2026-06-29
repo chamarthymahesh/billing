@@ -155,3 +155,27 @@ exports.deleteCompany = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.resetCompanyPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({ message: 'Password must be at least 4 characters.' });
+    }
+
+    // Find the companyadmin user for this company
+    const adminUser = await User.findOne({ companyId: req.params.id, role: 'companyadmin' });
+    if (!adminUser) {
+      return res.status(404).json({ message: 'No admin user found for this company.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    adminUser.password = await bcrypt.hash(newPassword, salt);
+    await adminUser.save();
+
+    res.json({ message: 'Password reset successfully.' });
+  } catch (error) {
+    console.error('RESET_COMPANY_PASSWORD_ERROR:', error);
+    res.status(500).json({ message: error.message });
+  }
+};

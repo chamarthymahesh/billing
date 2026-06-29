@@ -17,11 +17,12 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    if (req.query.filter === 'purchased' && req.user.companyId) {
-      const [purchases, invoices] = await Promise.all([
-        Purchase.find({ companyId: req.user.companyId }),
-        Invoice.find({ companyId: req.user.companyId })
-      ]);
+      if (req.query.filter === 'purchased') {
+        // Retrieve purchases and invoices across ALL companies (global view)
+        const [purchases, invoices] = await Promise.all([
+          Purchase.find({}),
+          Invoice.find({})
+        ]);
       
       const productIds = new Set();
       purchases.forEach(p => p.productId && productIds.add(p.productId.toString()));
