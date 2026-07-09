@@ -13,13 +13,22 @@ export default function Invoices() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  
+  // Bulk selection state
+  const [selectedInvoices, setSelectedInvoices] = useState([]);
+  const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
 
   useEffect(() => {
+    fetchInvoices();
+  }, []);
+  
+  const fetchInvoices = () => {
+    setLoading(true);
     API.get('/invoices').then(r => {
       setInvoices(r.data);
       setFiltered(r.data);
     }).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  };
 
   useEffect(() => {
     let list = invoices;
@@ -61,6 +70,57 @@ export default function Invoices() {
     }
   };
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedInvoices(filtered.map(i => i._id));
+    } else {
+      setSelectedInvoices([]);
+    }
+  };
+
+  const handleSelectInvoice = (id) => {
+    if (selectedInvoices.includes(id)) {
+      setSelectedInvoices(prev => prev.filter(selectedId => selectedId !== id));
+    } else {
+      setSelectedInvoices(prev => [...prev, id]);
+    }
+  };
+
+  const handleBulkUpdateStatus = async (status) => {
+    if (!status || selectedInvoices.length === 0) return;
+    if (!window.confirm(`Are you sure you want to update payment status to "${status.toUpperCase()}" for ${selectedInvoices.length} invoices?`)) return;
+    
+    setIsUpdatingBulk(true);
+    try {
+      await Promise.all(selectedInvoices.map(id => API.put(`/invoices/${id}/status`, { status })));
+      // Update local state directly to avoid refetching everything immediately if possible, or just refetch.
+      setInvoices(prev => prev.map(i => selectedInvoices.includes(i._id) ? { ...i, status } : i));
+      setSelectedInvoices([]);
+    } catch (err) {
+      alert('Error updating some invoices. Please refresh to see current states.');
+      fetchInvoices();
+    } finally {
+      setIsUpdatingBulk(false);
+    }
+  };
+
+  const handleBulkUpdateDelivery = async (status) => {
+    if (!status || selectedInvoices.length === 0) return;
+    if (!window.confirm(`Are you sure you want to update delivery status to "${status}" for ${selectedInvoices.length} invoices?`)) return;
+    
+    setIsUpdatingBulk(true);
+    try {
+      await Promise.all(selectedInvoices.map(id => API.put(`/invoices/${id}/delivery-status`, { materialDeliveryStatus: status })));
+      setInvoices(prev => prev.map(i => selectedInvoices.includes(i._id) ? { ...i, materialDeliveryStatus: status } : i));
+      setSelectedInvoices([]);
+    } catch (err) {
+      alert('Error updating some invoices. Please refresh to see current states.');
+      fetchInvoices();
+    } finally {
+      setIsUpdatingBulk(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="page-header">
@@ -72,27 +132,47 @@ export default function Invoices() {
       </div>
 
       <div className="glass-card">
-        <div className="table-filters">
-          <input
-            id="invoice-search"
-            className="input-field search-input"
-            style={{ flex: 1, minWidth: '200px' }}
-            placeholder="Search by invoice #, customer, or GeM contract..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <select
-            id="status-filter"
-            className="input-field filter-select"
-            style={{ width: '200px' }}
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="paid">Paid</option>
-            <option value="unpaid">Unpaid</option>
-            <option value="partially_paid">Partially Paid</option>
-          </select>
+        <div className="table-filters" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+            <input
+              id="invoice-search"
+              className="input-field search-input"
+              style={{ flex: 1, minWidth: '200px' }}
+              placeholder="Search by invoice #, customer, or GeM contract..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <select
+              id="status-filter"
+              className="input-field filter-select"
+              style={{ width: '200px' }}
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="partially_paid">Partially Paid</option>
+            </select>
+          </div>
+          
+          {selectedInvoices.length > 0 && user?.role === 'companyadmin' && (
+            <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 'bold', color: '#93c5fd' }}>{selectedInvoices.length} invoices selected</span>
+              
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '16px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Payment:</span>
+                <button disabled={isUpdatingBulk} className="btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#10b981', borderColor: '#10b981' }} onClick={() => handleBulkUpdateStatus('paid')}>Mark Paid</button>
+                <button disabled={isUpdatingBulk} className="btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#ef4444', borderColor: '#ef4444' }} onClick={() => handleBulkUpdateStatus('unpaid')}>Mark Unpaid</button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '16px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Delivery:</span>
+                <button disabled={isUpdatingBulk} className="btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#10b981', borderColor: '#10b981' }} onClick={() => handleBulkUpdateDelivery('Delivered')}>Set Delivered</button>
+                <button disabled={isUpdatingBulk} className="btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#f59e0b', borderColor: '#f59e0b' }} onClick={() => handleBulkUpdateDelivery('Pending')}>Set Pending</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? <div className="loading-state">Loading invoices...</div> : (
@@ -100,6 +180,16 @@ export default function Invoices() {
             <table className="data-table">
               <thead>
                 <tr>
+                  {user?.role === 'companyadmin' && (
+                    <th style={{ width: '40px', textAlign: 'center' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={filtered.length > 0 && selectedInvoices.length === filtered.length}
+                        onChange={handleSelectAll}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </th>
+                  )}
                   <th>Invoice #</th>
                   <th>Date</th>
                   <th>Customer</th>
@@ -116,11 +206,21 @@ export default function Invoices() {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="12" className="empty-row">No invoices found</td></tr>
+                  <tr><td colSpan={user?.role === 'companyadmin' ? 13 : 12} className="empty-row">No invoices found</td></tr>
                 ) : filtered.map(inv => {
                   if (!inv) return null;
                   return (
-                    <tr key={inv._id}>
+                    <tr key={inv._id} style={{ background: selectedInvoices.includes(inv._id) ? 'rgba(59, 130, 246, 0.05)' : '' }}>
+                      {user?.role === 'companyadmin' && (
+                        <td style={{ textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedInvoices.includes(inv._id)}
+                            onChange={() => handleSelectInvoice(inv._id)}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
+                      )}
                       <td className="inv-num-cell">{inv.invoiceNumber}</td>
                       <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-IN') : 'N/A'}</td>
                       <td>{inv.customer?.name || 'N/A'}</td>

@@ -267,6 +267,48 @@ export default function Reports() {
     }
   };
 
+// Inside the Reports component
+  const [selectedCommissions, setSelectedCommissions] = useState([]);
+  const [isUpdatingBulk, setIsUpdatingBulk] = useState(false);
+
+  const handleSelectAllCommissions = (e) => {
+    if (e.target.checked) {
+      setSelectedCommissions(commissionInvoices.map(i => i._id));
+    } else {
+      setSelectedCommissions([]);
+    }
+  };
+
+  const handleSelectCommission = (id) => {
+    if (selectedCommissions.includes(id)) {
+      setSelectedCommissions(prev => prev.filter(selectedId => selectedId !== id));
+    } else {
+      setSelectedCommissions(prev => [...prev, id]);
+    }
+  };
+
+  const handleBulkUpdateCommissionStatus = async (status) => {
+    if (!status || selectedCommissions.length === 0) return;
+    if (!window.confirm(`Are you sure you want to mark ${selectedCommissions.length} commissions as "${status.toUpperCase()}"?`)) return;
+    
+    setIsUpdatingBulk(true);
+    try {
+      await Promise.all(selectedCommissions.map(id => API.put(`/invoices/${id}/commission`, { status })));
+      setSelectedCommissions([]);
+      loadData();
+    } catch (err) {
+      alert('Error updating some commissions. Please refresh to see current states.');
+      loadData();
+    } finally {
+      setIsUpdatingBulk(false);
+    }
+  };
+
+  useEffect(() => {
+    // Clear selection when filters change
+    setSelectedCommissions([]);
+  }, [commVendorFilter, commMonthFilter, commStatusFilter]);
+
   return (
     <Layout>
       <div className="page-header">
@@ -501,6 +543,17 @@ export default function Reports() {
                     setCommStatusFilter('all');
                   }}>Clear Filters</button>
                 </div>
+                
+                {selectedCommissions.length > 0 && (
+                  <div style={{ width: '100%', marginTop: '16px', padding: '12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 'bold', color: '#f59e0b' }}>{selectedCommissions.length} commissions selected</span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '16px' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Update Status:</span>
+                      <button disabled={isUpdatingBulk} className="btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#10b981', borderColor: '#10b981' }} onClick={() => handleBulkUpdateCommissionStatus('paid')}>Mark as Paid</button>
+                      <button disabled={isUpdatingBulk} className="btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#ef4444', borderColor: '#ef4444' }} onClick={() => handleBulkUpdateCommissionStatus('unpaid')}>Mark as Unpaid</button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Commission Ledger Table */}
@@ -510,6 +563,14 @@ export default function Reports() {
                   <table className="data-table">
                     <thead>
                       <tr>
+                        <th style={{ width: '40px', textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={commissionInvoices.length > 0 && selectedCommissions.length === commissionInvoices.length}
+                            onChange={handleSelectAllCommissions}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </th>
                         <th>Order / Invoice #</th>
                         <th>Month</th>
                         <th>Date</th>
@@ -521,11 +582,19 @@ export default function Reports() {
                     </thead>
                     <tbody>
                       {commissionInvoices.length === 0 ? (
-                        <tr><td colSpan="7" className="empty-row">No commission records match your filters</td></tr>
+                        <tr><td colSpan="8" className="empty-row">No commission records match your filters</td></tr>
                       ) : commissionInvoices.map(inv => {
                         const monthStr = new Date(inv.date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
                         return (
-                          <tr key={inv._id}>
+                          <tr key={inv._id} style={{ background: selectedCommissions.includes(inv._id) ? 'rgba(245, 158, 11, 0.05)' : '' }}>
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedCommissions.includes(inv._id)}
+                                onChange={() => handleSelectCommission(inv._id)}
+                                style={{ cursor: 'pointer' }}
+                              />
+                            </td>
                             <td className="inv-num-cell">{inv.invoiceNumber}</td>
                             <td><strong>{monthStr}</strong></td>
                             <td>{new Date(inv.date).toLocaleDateString('en-IN')}</td>
