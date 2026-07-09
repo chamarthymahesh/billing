@@ -59,9 +59,7 @@ export default function CreateInvoice() {
   const [localCustomers, setLocalCustomers] = useState([]);
   const [globalCustomers, setGlobalCustomers] = useState([]);
   // Supplier states
-  const [useGlobalSuppliers, setUseGlobalSuppliers] = useState(false);
   const [localSuppliers, setLocalSuppliers] = useState([]);
-  const [globalSuppliers, setGlobalSuppliers] = useState([]);
   const [supplierSuggestions, setSupplierSuggestions] = useState([]);
   const [companies, setCompanies] = useState([]); // Array of registered companies
   const [currentCompany, setCurrentCompany] = useState(null);
@@ -226,14 +224,7 @@ export default function CreateInvoice() {
     }
   };
 
-  const toggleGlobalSuppliers = async (checked) => {
-    setUseGlobalSuppliers(checked);
-    if (checked) {
-      setSupplierSuggestions(companies);
-    } else {
-      setSupplierSuggestions([]);
-    }
-  };
+
 
   const handleCustomer = (field, val) => {
     let nextCustomer = { ...form.customer, [field]: val };
@@ -530,10 +521,7 @@ export default function CreateInvoice() {
         {/* Supplier Details */}
         <div className="glass-card form-section">
           <h2 className="section-title">Supplier Details</h2>
-          <label className="checkbox-label" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', background: 'rgba(99, 102, 241, 0.1)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)', marginBottom: '10px' }}>
-            <input type="checkbox" checked={useGlobalSuppliers} onChange={e => toggleGlobalSuppliers(e.target.checked)} style={{ width: '16px', height: '16px', marginRight: '8px' }} />
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--primary)' }}>🌐 Load Global Suppliers (All Companies)</span>
-          </label>
+
           <div className="form-grid-2">
             <div className="form-group">
               <label>Supplier Name *</label>
@@ -589,7 +577,14 @@ export default function CreateInvoice() {
                           value={item.productId || ''}
                           onChange={e => fillFromProduct(idx, e.target.value)}>
                           <option value="">Select...</option>
-                          {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                          {products.map(p => {
+                            const isGlobal = p.companyId && user.companyId && p.companyId !== user.companyId;
+                            return (
+                              <option key={p._id} value={p._id}>
+                                {p.name} {isGlobal ? '🌐 (Auto-Transfer)' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                       </td>
                       <td>

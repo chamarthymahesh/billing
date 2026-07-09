@@ -83,6 +83,109 @@ exports.createInvoice = async (req, res) => {
     const company = await Company.findById(companyId);
     if (!company) return res.status(404).json({ message: 'Company not found' });
 
+    // ------- Auto-Transfer Logic for Cross-Company Products -------
+    const allProductsInRequest = await Product.find({ _id: { $in: items.map(it => it.productId).filter(Boolean) } });
+    
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      if (!item.productId) continue;
+      
+      let sourceProd = allProductsInRequest.find(p => p._id.toString() === item.productId.toString());
+      if (sourceProd && sourceProd.companyId && sourceProd.companyId.toString() !== companyId.toString()) {
+        const sourceCompanyId = sourceProd.companyId;
+        const sourceCompany = await Company.findById(sourceCompanyId);
+        
+        // 1. Clone product to current (target) company if it doesn't exist
+        let targetProd = await Product.findOne({
+          companyId: companyId,
+          name: sourceProd.name,
+          brand: sourceProd.brand
+        });
+        
+        if (!targetProd) {
+          targetProd = await Product.create({
+            name: sourceProd.name,
+            brand: sourceProd.brand,
+            productType: sourceProd.productType,
+            sku: sourceProd.sku ? sourceProd.sku + '-' + companyId.toString().substring(0,4) : undefined,
+            price: sourceProd.price,
+            purchasePrice: sourceProd.purchasePrice,
+            gstRate: sourceProd.gstRate,
+            hsnCode: sourceProd.hsnCode,
+            companyId: companyId,
+            stock: 0
+          });
+        }
+        
+        // Update item.productId to point to local clone
+        item.productId = targetProd._id.toString();
+        
+        // 2. Generate Sales Invoice in Source Company
+        const salesInvoiceNumber = `${sourceCompany.settings.invoicePrefix}/${sourceCompany.settings.fyPrefix}/${String(sourceCompany.settings.nextInvoiceNumber).padStart(3, '0')}`;
+        const transferQty = Number(item.quantity);
+        const transferRate = Number(sourceProd.purchasePrice) || Number(sourceProd.price) || 0;
+        const transferAmount = transferQty * transferRate;
+        const transferGst = (transferAmount * (sourceProd.gstRate || 0)) / 100;
+        
+        await Invoice.create({
+          companyId: sourceCompanyId,
+          invoiceNumber: salesInvoiceNumber,
+          date: new Date(),
+          isGst: true,
+          customer: {
+            name: company.name,
+            address: company.address || '',
+            gstin: company.gstin || '',
+            state: company.state || '',
+            placeOfSupply: company.state || ''
+          },
+          items: [{
+            productId: sourceProd._id,
+            description: sourceProd.name,
+            hsnCode: sourceProd.hsnCode,
+            quantity: transferQty,
+            rate: transferRate,
+            gstRate: sourceProd.gstRate,
+            amount: transferAmount,
+            total: transferAmount + transferGst
+          }],
+          subTotal: transferAmount,
+          totalGst: transferGst,
+          grandTotal: transferAmount + transferGst,
+          totalProfit: 0,
+          stockDeficit: (sourceProd.stock || 0) - transferQty < 0
+        });
+        
+        sourceCompany.settings.nextInvoiceNumber += 1;
+        await sourceCompany.save();
+        
+        sourceProd.stock = (sourceProd.stock || 0) - transferQty;
+        await sourceProd.save();
+        
+        // 3. Generate Purchase Bill in Target Company
+        await Purchase.create({
+          companyId: companyId,
+          billNumber: salesInvoiceNumber,
+          supplierName: sourceCompany.name,
+          supplierGstin: sourceCompany.gstin,
+          purchaseDate: new Date(),
+          productId: targetProd._id,
+          quantity: transferQty,
+          rate: transferRate,
+          gstRate: sourceProd.gstRate || 0,
+          isGst: true,
+          paymentStatus: 'Paid',
+          subTotal: transferAmount,
+          totalGst: transferGst,
+          totalAmount: transferAmount + transferGst
+        });
+        
+        targetProd.stock = (targetProd.stock || 0) + transferQty;
+        await targetProd.save();
+      }
+    }
+    // --------------------------------------------------------------
+
     // ------- Purchase validation -------
     // Ensure every product in the invoice has at least one purchase record for this company
     const productIds = items.map(it => it.productId).filter(Boolean);

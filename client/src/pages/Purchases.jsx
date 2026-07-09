@@ -18,8 +18,7 @@ export default function Purchases() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [viewBillNo, setViewBillNo] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [useGlobalSuppliers, setUseGlobalSuppliers] = useState(false);
-  const [globalSuppliers, setGlobalSuppliers] = useState([]);
+
   const [form, setForm] = useState({
     companyId: '',
     supplierName: '',
@@ -72,19 +71,7 @@ export default function Purchases() {
     }
   }, [user]);
 
-  const toggleGlobalSuppliers = async (checked) => {
-    setUseGlobalSuppliers(checked);
-    if (checked && globalSuppliers.length === 0) {
-      try {
-        const { data } = await API.get('/purchases/global-suppliers');
-        setGlobalSuppliers(data);
-      } catch (err) {
-        console.error('Failed to fetch global suppliers:', err);
-        alert('Error loading global suppliers.');
-        setUseGlobalSuppliers(false);
-      }
-    }
-  };
+
 
   const localSupplierSuggestions = useMemo(() => {
     const suggestions = [];
@@ -98,9 +85,7 @@ export default function Purchases() {
     return suggestions;
   }, [purchases]);
 
-  const supplierSuggestions = useMemo(() => {
-    return useGlobalSuppliers ? globalSuppliers : localSupplierSuggestions;
-  }, [useGlobalSuppliers, globalSuppliers, localSupplierSuggestions]);
+  const supplierSuggestions = localSupplierSuggestions;
 
   const handleSupplierName = (val, isEdit = false) => {
     let gstin = isEdit ? editForm.supplierGstin : form.supplierGstin;
@@ -464,15 +449,6 @@ export default function Purchases() {
                     <div className="form-group">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <label style={{ margin: 0 }}>Supplier Name *</label>
-                        <label className="checkbox-label" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--primary)', gap: '4px', margin: 0 }}>
-                          <input 
-                            type="checkbox" 
-                            checked={useGlobalSuppliers} 
-                            onChange={e => toggleGlobalSuppliers(e.target.checked)} 
-                            style={{ width: '14px', height: '14px', cursor: 'pointer', margin: 0 }}
-                          />
-                          <span>🌐 Load Global Suppliers</span>
-                        </label>
                       </div>
                       <input 
                         type="text" 
@@ -641,15 +617,6 @@ export default function Purchases() {
                   <div className="form-group">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                       <label style={{ margin: 0 }}>Supplier Name *</label>
-                      <label className="checkbox-label" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--primary)', gap: '4px', margin: 0 }}>
-                        <input 
-                          type="checkbox" 
-                          checked={useGlobalSuppliers} 
-                          onChange={e => toggleGlobalSuppliers(e.target.checked)} 
-                          style={{ width: '14px', height: '14px', cursor: 'pointer', margin: 0 }}
-                        />
-                        <span>🌐 Load Global Suppliers</span>
-                      </label>
                     </div>
                     <input 
                       type="text" 
