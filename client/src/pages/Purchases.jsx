@@ -450,22 +450,19 @@ export default function Purchases() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <label style={{ margin: 0 }}>Supplier Name *</label>
                       </div>
-                      <input 
-                        type="text" 
-                        list="add-supplier-options" 
+                      <select 
                         className="input-field highlight-input" 
-                        placeholder="Type or select supplier..." 
                         required 
                         value={form.supplierName} 
                         onChange={e => handleSupplierName(e.target.value)} 
-                      />
-                      <datalist id="add-supplier-options">
+                      >
+                        <option value="">-- Select Supplier --</option>
                         {supplierSuggestions.map((s, i) => (
                           <option key={i} value={s.name}>
-                            {s.gstin ? `GSTIN: ${s.gstin}` : ''}
+                            {s.name} {s.gstin ? `- ${s.gstin}` : ''}
                           </option>
                         ))}
-                      </datalist>
+                      </select>
                     </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
@@ -618,22 +615,19 @@ export default function Purchases() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                       <label style={{ margin: 0 }}>Supplier Name *</label>
                     </div>
-                    <input 
-                      type="text" 
-                      list="edit-supplier-options" 
+                    <select 
                       className="input-field highlight-input" 
-                      placeholder="Type or select supplier..." 
                       required 
                       value={editForm.supplierName} 
                       onChange={e => handleSupplierName(e.target.value, true)} 
-                    />
-                    <datalist id="edit-supplier-options">
+                    >
+                      <option value="">-- Select Supplier --</option>
                       {supplierSuggestions.map((s, i) => (
                         <option key={i} value={s.name}>
-                          {s.gstin ? `GSTIN: ${s.gstin}` : ''}
+                          {s.name} {s.gstin ? `- ${s.gstin}` : ''}
                         </option>
                       ))}
-                    </datalist>
+                    </select>
                   </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
