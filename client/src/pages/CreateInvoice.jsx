@@ -4,7 +4,51 @@ import { useNavigate, useParams } from 'react-router-dom';
 import API from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
+import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import './CreateInvoice.css';
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    background: 'rgba(255, 255, 255, 0.02)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '8px',
+    color: '#fff',
+    minHeight: '42px',
+    boxShadow: 'none',
+    '&:hover': {
+      border: '1px solid rgba(99, 102, 241, 0.5)'
+    }
+  }),
+  menu: (base) => ({
+    ...base,
+    background: '#1e293b',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    zIndex: 9999
+  }),
+  option: (base, state) => ({
+    ...base,
+    background: state.isFocused ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+    color: '#fff',
+    cursor: 'pointer',
+    '&:active': {
+      background: 'rgba(99, 102, 241, 0.4)'
+    }
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: '#fff'
+  }),
+  input: (base) => ({
+    ...base,
+    color: '#fff'
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: '#94a3b8'
+  })
+};
 
 const EMPTY_ITEM = { productId: '', description: '', hsnCode: '', quantity: 1, rate: 0, gstRate: 18 };
 const GST_RATES = [0, 5, 12, 18, 28];
@@ -421,50 +465,25 @@ export default function CreateInvoice() {
           <div className="form-grid-2">
             <div className="form-group">
               <label>Customer Name *</label>
-              {customerSuggestions.length > 0 && (
-                <select 
-                  className="input-field" 
-                  style={{ marginBottom: isNewCustomer ? '10px' : '0' }}
-                  value={isNewCustomer ? 'NEW' : form.customer.name}
-                  onChange={e => handleCustomerSelect(e.target.value)}
-                >
-                  <option value="" disabled>Select a customer...</option>
-                  {customerSuggestions.map((c, i) => (
-                    <option key={i} value={c.name}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
-                  ))}
-                  <option value="NEW">➕ Add New Customer</option>
-                </select>
-              )}
-              
-              {(isNewCustomer || customerSuggestions.length === 0) && (
-                <>
-                  <input 
-                    className="input-field highlight-input" 
-                    placeholder="Type new customer name..." 
-                    required
-                    value={form.customer.name} 
-                    onChange={e => handleCustomer('name', e.target.value)} 
-                  />
-                  {(() => {
-                    const dup = customerSuggestions.find(
-                      c => form.customer.name && c.name.trim().toLowerCase() === form.customer.name.trim().toLowerCase()
-                    );
-                    return isNewCustomer && dup ? (
-                      <div className="duplicate-warning" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '6px', marginTop: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.85rem' }}>
-                        <span>⚠️ Customer <strong>"{dup.name}"</strong> is already registered!</span>
-                        <button 
-                          type="button" 
-                          className="btn-primary btn-sm" 
-                          style={{ marginLeft: '10px', display: 'inline-flex', padding: '4px 8px', fontSize: '0.75rem', border: 'none', cursor: 'pointer' }} 
-                          onClick={() => handleCustomerSelect(dup.name)}
-                        >
-                          Select Existing
-                        </button>
-                      </div>
-                    ) : null;
-                  })()}
-                </>
-              )}
+                <CreatableSelect
+                  styles={customSelectStyles}
+                  value={form.customer.name ? { label: form.customer.name, value: form.customer.name } : null}
+                  onChange={opt => {
+                    if (opt) {
+                      if (opt.__isNew__) {
+                        handleCustomer('name', opt.value);
+                      } else {
+                        handleCustomerSelect(opt.value);
+                      }
+                    } else {
+                      handleCustomer('name', '');
+                    }
+                  }}
+                  options={customerSuggestions.map(c => ({ value: c.name, label: `${c.name} ${c.phone ? `(${c.phone})` : ''}` }))}
+                  placeholder="Search or select a customer..."
+                  isClearable
+                  formatCreateLabel={(inputValue) => `➕ Add New Customer: "${inputValue}"`}
+                />
             </div>
             <div className="form-group">
               <label>Phone</label>
@@ -536,12 +555,15 @@ export default function CreateInvoice() {
             <div className="form-group">
               <label>Supplier Name *</label>
               {companies.length > 0 ? (
-                <select className="input-field" required value={form.supplier?.name || ''} onChange={e => handleSupplierSelect(e.target.value)}>
-                  <option value="" disabled>Select a supplier...</option>
-                  {companies.map((c, i) => (
-                    <option key={i} value={c.name}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
-                  ))}
-                </select>
+                <Select
+                  styles={customSelectStyles}
+                  required
+                  value={companies.filter(c => c.name === form.supplier?.name).map(c => ({ value: c.name, label: `${c.name} ${c.phone ? `(${c.phone})` : ''}` }))[0] || (form.supplier?.name ? { label: form.supplier.name, value: form.supplier.name } : null)}
+                  onChange={opt => handleSupplierSelect(opt ? opt.value : '')}
+                  options={companies.map(c => ({ value: c.name, label: `${c.name} ${c.phone ? `(${c.phone})` : ''}` }))}
+                  placeholder="Select a supplier..."
+                  isClearable
+                />
               ) : (
                 <div className="empty-row">No registered suppliers available.</div>
               )}
@@ -583,19 +605,15 @@ export default function CreateInvoice() {
                   return (
                     <tr key={idx}>
                       <td>
-                        <select className="input-field item-input sm"
-                          value={item.productId || ''}
-                          onChange={e => fillFromProduct(idx, e.target.value)}>
-                          <option value="">Select...</option>
-                          {products.map(p => {
-                            const isGlobal = p.companyId && user.companyId && p.companyId !== user.companyId;
-                            return (
-                              <option key={p._id} value={p._id}>
-                                {p.name} {isGlobal ? '🌐 (Auto-Transfer)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
+                        <Select
+                          styles={{...customSelectStyles, control: (b,s) => ({...customSelectStyles.control(b,s), minHeight: '38px'})}}
+                          required
+                          value={products.filter(p => p._id === item.productId).map(p => ({ value: p._id, label: `${p.name} ${p.companyId && user.companyId && p.companyId !== user.companyId ? '🌐 (Auto-Transfer)' : ''}` }))[0] || null}
+                          onChange={opt => fillFromProduct(idx, opt ? opt.value : '')}
+                          options={products.map(p => ({ value: p._id, label: `${p.name} ${p.companyId && user.companyId && p.companyId !== user.companyId ? '🌐 (Auto-Transfer)' : ''}` }))}
+                          placeholder="Select..."
+                          isClearable
+                        />
                       </td>
                       <td>
                         <input className="input-field item-input" placeholder="Description"

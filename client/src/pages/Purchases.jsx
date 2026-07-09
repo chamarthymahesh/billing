@@ -3,7 +3,51 @@ import API from '../api/axiosInstance';
 import Layout from '../components/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import './Purchases.css';
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    background: 'rgba(255, 255, 255, 0.02)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '8px',
+    color: '#fff',
+    minHeight: '42px',
+    boxShadow: 'none',
+    '&:hover': {
+      border: '1px solid rgba(99, 102, 241, 0.5)'
+    }
+  }),
+  menu: (base) => ({
+    ...base,
+    background: '#1e293b',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    zIndex: 9999
+  }),
+  option: (base, state) => ({
+    ...base,
+    background: state.isFocused ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+    color: '#fff',
+    cursor: 'pointer',
+    '&:active': {
+      background: 'rgba(99, 102, 241, 0.4)'
+    }
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: '#fff'
+  }),
+  input: (base) => ({
+    ...base,
+    color: '#fff'
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: '#94a3b8'
+  })
+};
 
 const EMPTY_ITEM = { productId: '', quantity: 1, rate: 0, gstRate: 18, isGst: true };
 
@@ -450,19 +494,15 @@ export default function Purchases() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <label style={{ margin: 0 }}>Supplier Name *</label>
                       </div>
-                      <select 
-                        className="input-field highlight-input" 
+                      <CreatableSelect 
+                        styles={customSelectStyles}
                         required 
-                        value={form.supplierName} 
-                        onChange={e => handleSupplierName(e.target.value)} 
-                      >
-                        <option value="">-- Select Supplier --</option>
-                        {supplierSuggestions.map((s, i) => (
-                          <option key={i} value={s.name}>
-                            {s.name} {s.gstin ? `- ${s.gstin}` : ''}
-                          </option>
-                        ))}
-                      </select>
+                        value={form.supplierName ? { label: form.supplierName, value: form.supplierName } : null}
+                        onChange={opt => handleSupplierName(opt ? opt.value : '')} 
+                        options={supplierSuggestions.map(s => ({ value: s.name, label: `${s.name} ${s.gstin ? `- ${s.gstin}` : ''}` }))}
+                        placeholder="Search or add supplier..."
+                        isClearable
+                      />
                     </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
@@ -512,10 +552,15 @@ export default function Purchases() {
                         return (
                           <tr key={idx}>
                             <td>
-                              <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value)}>
-                                <option value="">-- Choose Product --</option>
-                                {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                              </select>
+                              <Select
+                                styles={customSelectStyles}
+                                required
+                                value={products.filter(p => p._id === item.productId).map(p => ({ value: p._id, label: p.name }))[0] || null}
+                                onChange={opt => handleItemChange(idx, 'productId', opt ? opt.value : '')}
+                                options={products.map(p => ({ value: p._id, label: p.name }))}
+                                placeholder="Search product..."
+                                isClearable
+                              />
                             </td>
                             <td>
                               <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value)} />
@@ -615,19 +660,15 @@ export default function Purchases() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                       <label style={{ margin: 0 }}>Supplier Name *</label>
                     </div>
-                    <select 
-                      className="input-field highlight-input" 
+                    <CreatableSelect 
+                      styles={customSelectStyles}
                       required 
-                      value={editForm.supplierName} 
-                      onChange={e => handleSupplierName(e.target.value, true)} 
-                    >
-                      <option value="">-- Select Supplier --</option>
-                      {supplierSuggestions.map((s, i) => (
-                        <option key={i} value={s.name}>
-                          {s.name} {s.gstin ? `- ${s.gstin}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      value={editForm.supplierName ? { label: editForm.supplierName, value: editForm.supplierName } : null}
+                      onChange={opt => handleSupplierName(opt ? opt.value : '', true)} 
+                      options={supplierSuggestions.map(s => ({ value: s.name, label: `${s.name} ${s.gstin ? `- ${s.gstin}` : ''}` }))}
+                      placeholder="Search or add supplier..."
+                      isClearable
+                    />
                   </div>
                   <div className="form-group">
                     <label>Supplier GSTIN</label>
@@ -677,10 +718,15 @@ export default function Purchases() {
                         return (
                           <tr key={idx}>
                             <td>
-                              <select className="input-field item-input" required value={item.productId} onChange={e => handleItemChange(idx, 'productId', e.target.value, true)}>
-                                <option value="">-- Choose Product --</option>
-                                {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                              </select>
+                              <Select
+                                styles={customSelectStyles}
+                                required
+                                value={products.filter(p => p._id === item.productId).map(p => ({ value: p._id, label: p.name }))[0] || null}
+                                onChange={opt => handleItemChange(idx, 'productId', opt ? opt.value : '', true)}
+                                options={products.map(p => ({ value: p._id, label: p.name }))}
+                                placeholder="Search product..."
+                                isClearable
+                              />
                             </td>
                             <td>
                               <input type="number" step="any" className="input-field item-input sm" required value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', e.target.value, true)} />
