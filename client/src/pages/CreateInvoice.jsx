@@ -126,12 +126,22 @@ export default function CreateInvoice() {
       // Suppliers - load from registered companies instead of local invoices
       setLocalSuppliers(allCompanies);
       setSupplierSuggestions(allCompanies);
-      // Default notes
-      if (compRes.data?.settings?.termsAndConditions) {
-        setForm(f => ({ ...f, notes: compRes.data.settings.termsAndConditions }));
-      }
+      setForm(f => {
+        const nextForm = { ...f };
+        if (compRes.data?.settings?.termsAndConditions) {
+          nextForm.notes = compRes.data.settings.termsAndConditions;
+        }
+        if (!id && compRes.data) {
+          nextForm.supplier = {
+            name: compRes.data.name || '',
+            address: compRes.data.address || '',
+            phone: compRes.data.phone || ''
+          };
+        }
+        return nextForm;
+      });
     }).catch(() => {});
-  }, [user.companyId]);
+  }, [user.companyId, id]);
 
   useEffect(() => {
     if (id) {
