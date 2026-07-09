@@ -1,18 +1,19 @@
+/* ─── Global Stock ────────────────────────────────── */
 .company-name-cell {
-  font-weight: 600;
-  color: var(--primary);
+  font-weight: 700;
+  color: #93c5fd;
 }
 
 .stock-val {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 800;
   color: var(--text-main);
 }
 
 .badge-del {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border: 1px solid rgba(244, 63, 94, 0.2);
 }
 
 .search-wrap {
@@ -21,15 +22,17 @@
 
 .search-input {
   width: 100%;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  padding: 13px 20px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   color: var(--text-main);
-  font-size: 1rem;
+  font-size: 0.95rem;
+  transition: var(--transition);
 }
 
 .search-input:focus {
-  border-color: var(--primary);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-focus);
+  background: var(--bg-input-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
 }

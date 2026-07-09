@@ -1,77 +1,96 @@
+/* ─── Purchases Page ──────────────────────────────── */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .page-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .page-subtitle {
-  color: var(--text-mute);
-  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: 4px;
 }
 
-.btn-primary {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: var(--primary-dark);
-  transform: translateY(-2px);
-}
-
+/* ─── Stat Grid ───────────────────────────────────── */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
 }
 
 .stat-card-item {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px;
-  border-left: 4px solid var(--accent-color);
+  padding: 22px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.stat-card-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-color, var(--primary));
+  opacity: 0.8;
+}
+
+.stat-card-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
 .stat-icon-wrap {
-  font-size: 2rem;
-  background: rgba(255, 255, 255, 0.05);
-  width: 48px;
-  height: 48px;
+  font-size: 1.5rem;
+  background: var(--glass-light);
+  border: 1px solid var(--border);
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 14px;
+  flex-shrink: 0;
 }
 
 .stat-val {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.55rem;
+  font-weight: 800;
   color: var(--text-main);
+  letter-spacing: -0.5px;
+  line-height: 1;
 }
 
 .stat-lbl {
-  color: var(--text-mute);
-  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  margin-top: 5px;
 }
 
-/* Modal and Table styles should be inherited from index.css or common classes */
+/* Modal and Table styles inherited from index.css and Invoices.css */
 .empty-row {
   text-align: center;
-  padding: 40px;
-  color: var(--text-mute);
-  font-style: italic;
+  padding: 48px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }

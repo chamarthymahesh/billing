@@ -1,37 +1,43 @@
 .app-layout {
   display: flex;
   min-height: 100vh;
+  background: var(--bg-dark);
 }
 
 .main-content {
   flex: 1;
   margin-left: 260px;
-  padding: 32px;
-  transition: all 0.3s ease;
-  background: var(--bg-dark);
+  padding: 32px 36px;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100vh;
   width: calc(100% - 260px);
   overflow-x: auto;
 }
 
+/* ─── Page Header ─────────────────────────────────── */
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .page-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #93c5fd 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  line-height: 1.2;
 }
 
 .page-subtitle {
   color: var(--text-muted);
-  font-size: 0.9rem;
-  margin-top: 4px;
+  font-size: 0.875rem;
+  margin-top: 5px;
+  font-weight: 400;
 }

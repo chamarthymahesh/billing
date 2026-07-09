@@ -1,35 +1,63 @@
+/* ─── Transport Page ──────────────────────────────── */
 .vehicle-cell {
-  font-weight: 600;
-  color: var(--primary);
+  font-weight: 700;
+  color: #93c5fd;
 }
 
+/* ─── Type Badges ─────────────────────────────────── */
 .type-badge {
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: capitalize;
+  letter-spacing: 0.3px;
+  display: inline-block;
 }
 
-.type-badge.t-fuel { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.type-badge.t-maintenance { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-.type-badge.t-delivery { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.type-badge.t-tollexpense { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
-.type-badge.t-other { background: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+.type-badge.t-fuel {
+  background: var(--warning-subtle);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.type-badge.t-maintenance {
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.type-badge.t-delivery {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.type-badge.t-tollexpense {
+  background: var(--secondary-subtle);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.type-badge.t-other {
+  background: rgba(100, 116, 139, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.15);
+}
 
 .sub-text {
   font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 .amount-cell {
   font-weight: 700;
-  color: white;
+  color: var(--text-main);
 }
 
 .transport-form {
-  padding: 20px;
+  padding: 24px;
 }
 
 .form-group.full-width {
@@ -40,10 +68,12 @@
   background: none;
   border: none;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  opacity: 0.6;
+  transition: var(--transition);
+  font-size: 1rem;
 }
 
 .action-btn.delete:hover {
   opacity: 1;
+  color: var(--danger);
 }

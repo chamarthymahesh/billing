@@ -1,196 +1,254 @@
+/* ─── Page Header ─────────────────────────────────── */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .page-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .page-subtitle {
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 0.875rem;
+  margin-top: 4px;
 }
 
+/* ─── Table Filters ───────────────────────────────── */
 .table-filters {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.search-input {
-  max-width: 300px;
-}
+.search-input { max-width: 320px; }
 
 .count-badge {
-  background: var(--bg-dark);
-  padding: 4px 12px;
+  background: var(--bg-elevated);
+  padding: 5px 14px;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   border: 1px solid var(--border);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
+/* ─── Data Table ──────────────────────────────────── */
 .data-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.875rem;
 }
 
 .data-table th {
   text-align: left;
-  padding: 12px;
+  padding: 11px 16px;
   color: var(--text-muted);
-  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
   border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  white-space: nowrap;
 }
 
 .data-table td {
-  padding: 16px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
 }
 
+.data-table tbody tr:hover td {
+  background: rgba(59, 130, 246, 0.03);
+}
+
+/* ─── Product Cells ───────────────────────────────── */
 .product-name {
   font-weight: 700;
   color: var(--text-main);
-  font-size: 1.05rem;
+  font-size: 0.925rem;
 }
 
 .product-meta {
-  font-size: 0.8rem;
-  color: var(--text-mute);
-  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 3px;
 }
 
 .brand-badge {
   display: inline-block;
-  background: rgba(99, 102, 241, 0.1);
-  color: #818cf8;
+  background: var(--primary-subtle);
+  color: #93c5fd;
   padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .category-text {
-  font-size: 0.85rem;
-  color: var(--text-mute);
-  margin-top: 4px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 3px;
 }
 
 .selling-price {
   font-weight: 700;
   color: var(--text-main);
+  font-size: 0.95rem;
 }
 
 .mrp-text {
   font-size: 0.75rem;
-  color: var(--text-mute);
+  color: var(--text-muted);
   text-decoration: line-through;
+  margin-top: 2px;
 }
 
-.stock-status {
-  font-weight: 600;
-}
-
-.stock-ok {
-  color: #10b981;
-}
-
-.stock-low {
-  color: #f59e0b;
-}
+/* ─── Stock Status ────────────────────────────────── */
+.stock-status { font-weight: 700; }
+.stock-ok { color: var(--accent); }
+.stock-low { color: var(--warning); }
 
 .low-stock-alert {
-  font-size: 0.7rem;
-  color: #ef4444;
+  font-size: 0.68rem;
+  color: var(--danger);
   font-weight: 700;
   text-transform: uppercase;
-  margin-top: 4px;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
 }
 
 .gst-badge {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px 8px;
+  background: var(--accent-subtle);
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--accent);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.action-btns {
-  display: flex;
-  gap: 8px;
-}
+/* ─── Action Buttons ──────────────────────────────── */
+.action-btns { display: flex; gap: 8px; align-items: center; }
 
 .action-btn-icon {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
   border: 1px solid var(--border);
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-sub);
 }
 
 .action-btn-icon:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
 }
 
 .action-btn-icon.del:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: var(--danger);
+  background: var(--danger-subtle);
+  border-color: rgba(244, 63, 94, 0.3);
+  color: var(--danger);
 }
 
-/* Modal Styles */
+.action-btn-icon.edit:hover {
+  background: var(--warning-subtle);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+}
+
+/* ─── Modal ───────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  padding: 16px;
 }
 
 .modal {
   width: 90%;
-  max-width: 650px;
-  max-height: 85vh;
+  max-width: 680px;
+  max-height: 88vh;
   overflow-y: auto;
-  padding: 30px;
-}
-
-.modal::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  padding: 32px;
+  background: rgba(10, 16, 32, 0.98);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .close-btn {
-  background: none;
+  background: var(--bg-elevated);
   color: var(--text-muted);
-  font-size: 1.2rem;
+  font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.close-btn:hover {
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+.modal-footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .form-grid-2 {
@@ -199,52 +257,57 @@
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .form-group label {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.modal-footer {
-  margin-top: 24px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
-  padding: 10px 20px;
-  border-radius: 8px;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.sku-input-wrap {
-  display: flex;
-  gap: 8px;
-}
+/* ─── SKU ─────────────────────────────────────────── */
+.sku-input-wrap { display: flex; gap: 8px; }
 
 .sku-gen-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  padding: 0 14px;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
+  transition: var(--transition);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .sku-gen-btn:hover {
   background: var(--primary);
   border-color: var(--primary);
   color: white;
+  box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-sub);
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
 }

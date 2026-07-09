@@ -1,40 +1,71 @@
+/* ─── Invoice Form ────────────────────────────────── */
 .invoice-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
-.form-section { padding: 24px; }
+.form-section { padding: 28px; }
 
+/* ─── GST Toggle ──────────────────────────────────── */
 .gst-toggle {
   display: flex;
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
+  background: var(--bg-elevated);
 }
 
 .toggle-btn {
-  padding: 10px 20px;
+  padding: 10px 22px;
   background: transparent;
   color: var(--text-muted);
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: var(--transition);
+  position: relative;
 }
 
 .toggle-btn.active {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), #2563eb);
   color: white;
+  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
+/* ─── Form Grid ───────────────────────────────────── */
 .form-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 18px;
 }
 
 @media (max-width: 768px) { .form-grid-2 { grid-template-columns: 1fr; } }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Section Title ───────────────────────────────── */
+.section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 20px;
+}
+
+/* ─── Items Header ────────────────────────────────── */
 .items-header {
   display: flex;
   justify-content: space-between;
@@ -42,8 +73,9 @@
   margin-bottom: 16px;
 }
 
-.btn-sm { padding: 8px 14px; font-size: 0.85rem; border-radius: 8px; }
+.btn-sm { padding: 7px 14px; font-size: 0.82rem; border-radius: var(--radius-sm); }
 
+/* ─── Items Table ─────────────────────────────────── */
 .items-table {
   width: 100%;
   border-collapse: collapse;
@@ -52,16 +84,26 @@
 }
 
 .items-table th {
-  padding: 10px 10px;
+  padding: 10px 12px;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.8px;
+  font-weight: 700;
   border-bottom: 1px solid var(--border);
   text-align: left;
+  background: rgba(255,255,255,0.02);
 }
 
-.items-table td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.items-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.items-table tbody tr:hover td {
+  background: rgba(59, 130, 246, 0.03);
+}
 
 .item-input {
   min-width: 80px;
@@ -72,77 +114,200 @@
 .item-input.sm { min-width: 60px; max-width: 110px; }
 
 .calc-cell { color: var(--text-muted); white-space: nowrap; padding: 10px 12px; }
-.gst-cell { color: #10b981; }
-.total-cell { color: white; font-weight: 600; }
+.gst-cell { color: var(--accent); font-weight: 600; }
+.total-cell { color: var(--text-main); font-weight: 700; }
 
+/* ─── Remove Button ───────────────────────────────── */
 .remove-btn {
-  background: rgba(239,68,68,0.15);
-  color: #ef4444;
-  border: none;
-  border-radius: 6px;
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  border-radius: 7px;
   width: 28px;
   height: 28px;
   font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: var(--transition);
 }
 
-.remove-btn:hover { background: rgba(239,68,68,0.3); }
-
-.rate-input-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.remove-btn:hover {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
 }
+
+/* ─── Rate Input ──────────────────────────────────── */
+.rate-input-wrap { display: flex; flex-direction: column; gap: 3px; }
 
 .purchase-hint {
-  font-size: 0.72rem;
-  color: #f59e0b;
-  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--warning);
+  font-weight: 700;
   white-space: nowrap;
 }
 
+/* ─── Form Bottom ─────────────────────────────────── */
 .form-bottom {
   display: grid;
   grid-template-columns: 1fr 380px;
-  gap: 24px;
+  gap: 20px;
   align-items: start;
 }
 
 @media (max-width: 960px) { .form-bottom { grid-template-columns: 1fr; } }
 
-.charges-card, .summary-card { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.charges-card, .summary-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-.summary-rows { display: flex; flex-direction: column; gap: 0; }
+/* ─── Summary ─────────────────────────────────────── */
+.summary-rows { display: flex; flex-direction: column; }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  font-size: 0.9rem;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 
-.summary-row span:last-child { font-weight: 600; color: white; }
+.summary-row span:last-child {
+  font-weight: 600;
+  color: var(--text-sub);
+}
 
 .summary-row.grand {
   border-bottom: none;
-  border-top: 2px solid var(--primary);
-  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
   padding-top: 16px;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
 }
 
-.summary-row.grand span { color: #10b981 !important; font-size: 1.2rem; }
+.summary-row.grand span {
+  color: var(--accent) !important;
+  font-size: 1.2rem;
+}
 
+/* ─── Submit Button ───────────────────────────────── */
 .submit-btn {
   width: 100%;
   padding: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  margin-top: 4px;
+  background: linear-gradient(135deg, var(--accent), #059669);
+  color: white;
+  box-shadow: 0 6px 20px var(--accent-glow);
+  transition: var(--transition);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px var(--accent-glow);
+}
+
+/* ─── Checkbox Label ──────────────────────────────── */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-sub);
+  user-select: none;
+}
+
+/* ─── Modal ───────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+  padding: 16px;
+}
+
+.modal {
+  width: 90%;
+  max-width: 960px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 32px;
+  background: rgba(8, 13, 26, 0.98);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.65);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.close-btn {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1rem;
-  font-weight: 600;
-  border-radius: 10px;
-  margin-top: 8px;
+  transition: var(--transition);
+}
+
+.close-btn:hover {
+  background: var(--danger-subtle);
+  color: var(--danger);
+}
+
+.modal-form { display: flex; flex-direction: column; gap: 20px; }
+
+.modal-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-sub);
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
 }
