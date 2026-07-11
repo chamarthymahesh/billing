@@ -97,6 +97,7 @@ export default function CreateInvoice() {
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
+  const [myPurchasedProductIds, setMyPurchasedProductIds] = useState(new Set());
   const [customerSuggestions, setCustomerSuggestions] = useState([]);
   const [isNewCustomer, setIsNewCustomer] = useState(true);
   const [useGlobalCustomers, setUseGlobalCustomers] = useState(false);
@@ -139,9 +140,11 @@ export default function CreateInvoice() {
       API.get('/products'),
       API.get('/invoices'),
       API.get(`/companies/${user.companyId}`),
-      API.get('/companies/list')
-    ]).then(([prodRes, invRes, compRes, compListRes]) => {
+      API.get('/companies/list'),
+      API.get('/purchases/my-products').catch(() => ({ data: [] }))
+    ]).then(([prodRes, invRes, compRes, compListRes, myProdsRes]) => {
       setProducts(prodRes.data);
+      setMyPurchasedProductIds(new Set(myProdsRes.data));
       setCurrentCompany(compRes.data);
       const allCompanies = compListRes.data || [];
       setCompanies(allCompanies);
@@ -609,14 +612,12 @@ export default function CreateInvoice() {
                           styles={customSelectStyles}
                           required
                           value={products.filter(p => p._id === item.productId).map(p => {
-                            const myCompanyId = currentCompany?._id || user?.companyId;
-                            const isTransfer = p.companyId && myCompanyId && String(p.companyId) !== String(myCompanyId);
+                            const isTransfer = !myPurchasedProductIds.has(p._id);
                             return { value: p._id, label: isTransfer ? `${p.name} 🌐 (Auto-Transfer)` : p.name };
                           })[0] || null}
                           onChange={opt => fillFromProduct(idx, opt ? opt.value : '')}
                           options={products.map(p => {
-                            const myCompanyId = currentCompany?._id || user?.companyId;
-                            const isTransfer = p.companyId && myCompanyId && String(p.companyId) !== String(myCompanyId);
+                            const isTransfer = !myPurchasedProductIds.has(p._id);
                             return { value: p._id, label: isTransfer ? `${p.name} 🌐 (Auto-Transfer)` : p.name };
                           })}
                           placeholder="Select..."

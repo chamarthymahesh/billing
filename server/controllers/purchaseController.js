@@ -228,3 +228,16 @@ exports.getGlobalSuppliers = async (req, res) => {
   }
 };
 
+// Returns all productIds that the current company has purchase records for.
+// Used by the frontend to show 🌐 (Auto-Transfer) label for products not yet purchased.
+exports.getMyPurchasedProductIds = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const purchases = await Purchase.find({ companyId }).select('productId');
+    const productIds = [...new Set(purchases.map(p => p.productId?.toString()).filter(Boolean))];
+    res.json(productIds);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
