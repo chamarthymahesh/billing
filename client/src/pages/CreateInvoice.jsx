@@ -587,16 +587,16 @@ export default function CreateInvoice() {
             <table className="items-table">
               <thead>
                 <tr>
-                  <th style={{ width: '30%' }}>Product</th>
-                  <th style={{ width: '20%' }}>Description</th>
-                  {form.isGst && <th style={{ width: '10%' }}>HSN Code</th>}
-                  <th style={{ width: '8%' }}>Qty</th>
-                  <th style={{ width: '12%' }}>Rate (₹)</th>
-                  {form.isGst && <th style={{ width: '10%' }}>GST %</th>}
-                  <th style={{ width: '10%' }}>Amount</th>
-                  {form.isGst && <th style={{ width: '10%' }}>GST Amt</th>}
-                  <th style={{ width: '15%' }}>Total</th>
-                  <th style={{ width: '5%' }}></th>
+                  <th style={{ minWidth: '300px' }}>Product</th>
+                  <th style={{ minWidth: '150px' }}>Description</th>
+                  {form.isGst && <th style={{ minWidth: '80px' }}>HSN Code</th>}
+                  <th style={{ minWidth: '60px' }}>Qty</th>
+                  <th style={{ minWidth: '100px' }}>Rate (₹)</th>
+                  {form.isGst && <th style={{ minWidth: '70px' }}>GST %</th>}
+                  <th style={{ minWidth: '90px' }}>Amount</th>
+                  {form.isGst && <th style={{ minWidth: '80px' }}>GST Amt</th>}
+                  <th style={{ minWidth: '110px' }}>Total</th>
+                  <th style={{ minWidth: '40px' }}></th>
                 </tr>
               </thead>
               <tbody>
