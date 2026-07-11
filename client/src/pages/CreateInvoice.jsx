@@ -587,16 +587,16 @@ export default function CreateInvoice() {
             <table className="items-table">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Description</th>
-                  {form.isGst && <th>HSN Code</th>}
-                  <th>Qty</th>
-                  <th>Rate (₹)</th>
-                  {form.isGst && <th>GST %</th>}
-                  <th>Amount</th>
-                  {form.isGst && <th>GST Amt</th>}
-                  <th>Total</th>
-                  <th></th>
+                  <th style={{ width: '30%' }}>Product</th>
+                  <th style={{ width: '20%' }}>Description</th>
+                  {form.isGst && <th style={{ width: '10%' }}>HSN Code</th>}
+                  <th style={{ width: '8%' }}>Qty</th>
+                  <th style={{ width: '12%' }}>Rate (₹)</th>
+                  {form.isGst && <th style={{ width: '10%' }}>GST %</th>}
+                  <th style={{ width: '10%' }}>Amount</th>
+                  {form.isGst && <th style={{ width: '10%' }}>GST Amt</th>}
+                  <th style={{ width: '15%' }}>Total</th>
+                  <th style={{ width: '5%' }}></th>
                 </tr>
               </thead>
               <tbody>
