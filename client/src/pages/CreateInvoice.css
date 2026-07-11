@@ -107,8 +107,9 @@
 
 .item-input {
   min-width: 80px;
-  padding: 8px 10px;
-  font-size: 0.85rem;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  min-height: 42px;
 }
 
 .item-input.sm { min-width: 60px; max-width: 110px; }

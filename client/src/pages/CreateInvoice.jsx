@@ -606,7 +606,7 @@ export default function CreateInvoice() {
                     <tr key={idx}>
                       <td>
                         <Select
-                          styles={{...customSelectStyles, control: (b,s) => ({...customSelectStyles.control(b,s), minHeight: '38px'})}}
+                          styles={customSelectStyles}
                           required
                           value={products.filter(p => p._id === item.productId).map(p => ({ value: p._id, label: `${p.name} ${p.companyId && user.companyId && p.companyId !== user.companyId ? '🌐 (Auto-Transfer)' : ''}` }))[0] || null}
                           onChange={opt => fillFromProduct(idx, opt ? opt.value : '')}
