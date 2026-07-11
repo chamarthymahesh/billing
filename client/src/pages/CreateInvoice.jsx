@@ -609,12 +609,12 @@ export default function CreateInvoice() {
                           styles={customSelectStyles}
                           required
                           value={products.filter(p => p._id === item.productId).map(p => {
-                            const isTransfer = p.companyId && user.companyId && String(p.companyId) !== String(user.companyId);
+                            const isTransfer = p.companyId && user?.companyId && String(p.companyId) !== String(user?.companyId);
                             return { value: p._id, label: `${p.name} ${isTransfer ? '🌐 (Auto-Transfer)' : ''}` };
                           })[0] || null}
                           onChange={opt => fillFromProduct(idx, opt ? opt.value : '')}
                           options={products.map(p => {
-                            const isTransfer = p.companyId && user.companyId && String(p.companyId) !== String(user.companyId);
+                            const isTransfer = p.companyId && user?.companyId && String(p.companyId) !== String(user?.companyId);
                             return { value: p._id, label: `${p.name} ${isTransfer ? '🌐 (Auto-Transfer)' : ''}` };
                           })}
                           placeholder="Select..."

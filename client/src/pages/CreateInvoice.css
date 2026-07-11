@@ -75,6 +75,12 @@
 
 .btn-sm { padding: 7px 14px; font-size: 0.82rem; border-radius: var(--radius-sm); }
 
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* ─── Items Table ─────────────────────────────────── */
 .items-table {
   width: 100%;
