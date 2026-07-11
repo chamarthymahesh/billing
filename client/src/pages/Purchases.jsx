@@ -118,8 +118,8 @@ export default function Purchases() {
 
 
   const localSupplierSuggestions = useMemo(() => {
-    const suggestions = [{ name: 'NA', gstin: '' }];
-    const seen = new Set(['na']);
+    const suggestions = [];
+    const seen = new Set();
     purchases.forEach(p => {
       if (p.supplierName && !seen.has(p.supplierName.toLowerCase())) {
         seen.add(p.supplierName.toLowerCase());
