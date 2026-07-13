@@ -321,11 +321,6 @@ exports.createInvoice = async (req, res) => {
           // The product may belong to Virat (different company). Search other companies for stock.
           const prodCompanyId = prod.companyId?._id?.toString() || prod.companyId?.toString();
           const excludeIds = [null, companyId, prodCompanyId].filter(Boolean);
-
-          // Debug: show all matching products across all companies
-          const allMatchingProds = await Product.find({ name: { $regex: new RegExp(`^${prod.name}$`, 'i') } }).populate('companyId', 'name');
-          console.log('All companies with', prod.name, ':', allMatchingProds.map(p => `${p.companyId?.name || p.companyId}: stock=${p.stock}`));
-
           const sourceProductWithStock = await Product.findOne({
             name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
             companyId: { $nin: excludeIds },
@@ -747,9 +742,25 @@ exports.updateInvoice = async (req, res) => {
 
 exports.deleteInvoice = async (req, res) => {
   try {
-    const invoice = await Invoice.findByIdAndDelete(req.params.id);
+    const invoice = await Invoice.findById(req.params.id);
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
-    res.json({ message: 'Invoice deleted successfully' });
+
+    // Restore stock for all products in this invoice
+    if (invoice.items && invoice.items.length > 0) {
+      const Product = require('../models/Product');
+      for (const item of invoice.items) {
+        if (item.productId) {
+          const product = await Product.findById(item.productId);
+          if (product) {
+            product.stock = (product.stock || 0) + (item.quantity || 0);
+            await product.save();
+          }
+        }
+      }
+    }
+
+    await Invoice.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Invoice deleted successfully (stock restored)' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
