@@ -118,15 +118,18 @@ export default function Purchases() {
 
 
   const localSupplierSuggestions = useMemo(() => {
-    const suggestions = [];
-    const seen = new Set();
+    const map = {};
     purchases.forEach(p => {
-      if (p.supplierName && !seen.has(p.supplierName.toLowerCase())) {
-        seen.add(p.supplierName.toLowerCase());
-        suggestions.push({ name: p.supplierName, gstin: p.supplierGstin });
+      if (!p.supplierName) return;
+      const key = p.supplierName.toLowerCase();
+      if (!map[key]) {
+        map[key] = { name: p.supplierName, gstin: p.supplierGstin || '' };
+      } else if (!map[key].gstin && p.supplierGstin) {
+        // upgrade to a record that has a GSTIN
+        map[key].gstin = p.supplierGstin;
       }
     });
-    return suggestions;
+    return Object.values(map);
   }, [purchases]);
 
   const supplierSuggestions = localSupplierSuggestions;
