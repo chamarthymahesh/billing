@@ -96,7 +96,18 @@ export default function Purchases() {
   const fetchProducts = async () => {
     try {
       const { data } = await API.get('/products');
-      setProducts(data);
+      const rawProducts = data || [];
+      const myProducts = rawProducts.filter(p => p.companyId === user.companyId);
+      const otherProducts = rawProducts.filter(p => p.companyId !== user.companyId);
+      
+      const myProductNames = new Set(myProducts.map(p => (p.name || '').toUpperCase().trim()));
+      const filteredOtherProducts = otherProducts.filter(p => !myProductNames.has((p.name || '').toUpperCase().trim()));
+      
+      const finalProducts = [...myProducts, ...filteredOtherProducts].map(p => ({
+        ...p,
+        name: (p.name || '').toUpperCase()
+      }));
+      setProducts(finalProducts);
     } catch (err) {
       console.error(err);
     }
@@ -161,6 +172,9 @@ export default function Purchases() {
   };
 
   const handleItemChange = (idx, field, val, isEdit = false) => {
+    if (field === 'description') {
+      val = (val || '').toUpperCase();
+    }
     if (isEdit) {
       const newItems = [...editForm.items];
       newItems[idx][field] = val;
