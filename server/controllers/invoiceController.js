@@ -186,7 +186,7 @@ exports.createInvoice = async (req, res) => {
     }
     // --------------------------------------------------------------
 
-    // ------- Purchase validation -------
+    // ------- Purchase validation & Auto-Creation -------
     // Ensure every product in the invoice has at least one purchase record for this company
     const productIds = items.map(it => it.productId).filter(Boolean);
     if (productIds.length > 0) {
@@ -195,23 +195,62 @@ exports.createInvoice = async (req, res) => {
         productId: { $in: productIds }
       }).select('productId');
       const purchasedSet = new Set(purchases.map(p => p.productId?.toString()));
-      const missingProducts = [];
-      // Populate missing product names for a clearer message (fetch once)
-      const allProducts = await Product.find({ _id: { $in: productIds } }).select('name');
-      const prodMap = {};
-      allProducts.forEach(p => { prodMap[p._id.toString()] = p.name; });
-      productIds.forEach(pid => {
-        if (!purchasedSet.has(pid.toString())) {
-          missingProducts.push(prodMap[pid] || pid);
+      
+      const missingIds = [...new Set(productIds.map(pid => pid.toString()))].filter(pid => !purchasedSet.has(pid));
+      
+      if (missingIds.length > 0) {
+        const allProducts = await Product.find({ _id: { $in: missingIds } });
+        const prodMap = {};
+        allProducts.forEach(p => { prodMap[p._id.toString()] = p; });
+
+        for (const pid of missingIds) {
+          const prod = prodMap[pid];
+          if (!prod) continue;
+          
+          const billedQty = items.filter(it => it.productId?.toString() === pid).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+          
+          let rate = prod.purchasePrice || prod.price || 0;
+          
+          // Look for the same product in another company that has stock to get the purchase price
+          const productWithStock = await Product.findOne({
+            name: prod.name,
+            stock: { $gt: 0 },
+            _id: { $ne: prod._id }
+          }).sort({ stock: -1 });
+
+          if (productWithStock && productWithStock.purchasePrice) {
+            rate = productWithStock.purchasePrice;
+          } else if (productWithStock && productWithStock.price) {
+            rate = productWithStock.price;
+          }
+          
+          const subTotal = billedQty * rate;
+          const gstAmount = (subTotal * (prod.gstRate || 0)) / 100;
+          const totalAmount = subTotal + gstAmount;
+          
+          await Purchase.create({
+            companyId: companyId,
+            productId: pid,
+            supplierName: productWithStock ? 'Auto Transfer' : 'Auto Generated',
+            billNumber: `AUTO-PUR-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            purchaseDate: new Date(),
+            quantity: billedQty,
+            rate: rate,
+            gstRate: prod.gstRate || 0,
+            subTotal: subTotal,
+            totalGst: gstAmount,
+            totalAmount: totalAmount,
+            isGst: (prod.gstRate || 0) > 0,
+            paymentStatus: 'Paid'
+          });
+          
+          // Update product stock with auto-purchased quantity
+          prod.stock = (prod.stock || 0) + billedQty;
+          await prod.save();
         }
-      });
-      if (missingProducts.length) {
-        return res.status(400).json({
-          message: `These products have no purchase records for this company: ${missingProducts.join(', ')}. Please create purchase invoices first.`
-        });
       }
     }
-    // -----------------------------------
+    // ---------------------------------------------------
 
     const invoiceNumber = `${company.settings.invoicePrefix}/${company.settings.fyPrefix}/${String(company.settings.nextInvoiceNumber).padStart(3, '0')}`;
     
