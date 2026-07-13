@@ -210,27 +210,46 @@ exports.createInvoice = async (req, res) => {
           const billedQty = items.filter(it => it.productId?.toString() === pid).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
           
           let rate = prod.purchasePrice || prod.price || 0;
-          
-          // Look for the same product in another company that has a valid price (even if stock is 0)
-          const productWithPrice = await Product.findOne({
-            name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
-            _id: { $ne: prod._id },
-            companyId: { $ne: null },
-            $or: [
-              { purchasePrice: { $gt: 0 } },
-              { price: { $gt: 0 } }
-            ]
-          }).sort({ updatedAt: -1 }).populate('companyId', 'name');
 
-          // Default supplier name if we cannot determine source company
+          // Strategy 1: Find the most recent real purchase for ANY product with the same name
+          // (across any company) that has a real supplier name and valid rate
+          const allSameNameProducts = await Product.find({
+            name: { $regex: new RegExp(`^${prod.name}$`, 'i') }
+          }).select('_id');
+          const sameNameProductIds = allSameNameProducts.map(p => p._id);
+
+          const existingPurchase = await Purchase.findOne({
+            productId: { $in: sameNameProductIds },
+            supplierName: { $nin: ['Auto Generated', 'Auto Transfer', ''] },
+            rate: { $gt: 0 }
+          }).sort({ purchaseDate: -1 });
+
           let supplierName = 'Auto Generated';
-          if (productWithPrice) {
-            // Use the price from the source product if available
-            rate = productWithPrice.purchasePrice || productWithPrice.price || rate;
-            // Prefer the source company's name for supplier regardless of price validity
-            if (productWithPrice.companyId && productWithPrice.companyId.name) {
-              supplierName = productWithPrice.companyId.name;
-            } else {
+          let supplierGstin = '';
+
+          if (existingPurchase) {
+            // Use rate and supplier from the real historical purchase
+            rate = existingPurchase.rate;
+            supplierName = existingPurchase.supplierName;
+            supplierGstin = existingPurchase.supplierGstin || '';
+          } else {
+            // Strategy 2: Look for any product with same name that has a companyId and valid price
+            const productWithPrice = await Product.findOne({
+              name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
+              companyId: { $ne: null },
+              $or: [
+                { purchasePrice: { $gt: 0 } },
+                { price: { $gt: 0 } }
+              ]
+            }).sort({ updatedAt: -1 }).populate('companyId', 'name');
+
+            if (productWithPrice) {
+              rate = productWithPrice.purchasePrice || productWithPrice.price || rate;
+              supplierName = (productWithPrice.companyId && productWithPrice.companyId.name)
+                ? productWithPrice.companyId.name
+                : 'Auto Transfer';
+            } else if (rate > 0) {
+              // We have a price from the product itself, just no identifiable supplier
               supplierName = 'Auto Transfer';
             }
           }
@@ -243,6 +262,7 @@ exports.createInvoice = async (req, res) => {
             companyId: companyId,
             productId: pid,
             supplierName: supplierName,
+            supplierGstin: supplierGstin,
             billNumber: `AUTO-PUR-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
             purchaseDate: new Date(),
             quantity: billedQty,
