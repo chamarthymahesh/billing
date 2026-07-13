@@ -22,7 +22,7 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:5000/api
+        - VITE_API_URL=/api
     container_name: billing_frontend
     ports:
       - "5173:80" # Maps local port 5173 to NGINX port 80
