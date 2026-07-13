@@ -29,10 +29,11 @@ exports.createPurchase = async (req, res) => {
       totalAmount
     });
 
-    // Update product stock
+    // Update product stock and purchase price
     const product = await Product.findById(productId);
     if (product) {
       product.stock += Number(quantity);
+      product.purchasePrice = Number(rate);
       await product.save();
     }
 
