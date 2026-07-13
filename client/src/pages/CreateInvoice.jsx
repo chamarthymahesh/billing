@@ -27,6 +27,10 @@ const customSelectStyles = {
     border: '1px solid rgba(255, 255, 255, 0.1)',
     zIndex: 9999
   }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999
+  }),
   option: (base, state) => ({
     ...base,
     background: state.isFocused ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
@@ -611,6 +615,8 @@ export default function CreateInvoice() {
                         <Select
                           styles={customSelectStyles}
                           required
+                          menuPortalTarget={document.body}
+                          menuPosition="fixed"
                           value={products.filter(p => p._id === item.productId).map(p => {
                             const isTransfer = !myPurchasedProductIds.has(p._id);
                             return { value: p._id, label: isTransfer ? `${p.name} 🌐 (Auto-Transfer)` : p.name };

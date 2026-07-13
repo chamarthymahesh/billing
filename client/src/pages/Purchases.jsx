@@ -26,6 +26,10 @@ const customSelectStyles = {
     border: '1px solid rgba(255, 255, 255, 0.1)',
     zIndex: 9999
   }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999
+  }),
   option: (base, state) => ({
     ...base,
     background: state.isFocused ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
@@ -500,6 +504,8 @@ export default function Purchases() {
                       <CreatableSelect 
                         styles={customSelectStyles}
                         required 
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
                         value={form.supplierName ? { label: form.supplierName, value: form.supplierName } : null}
                         onChange={opt => handleSupplierName(opt ? opt.value : '')} 
                         options={supplierSuggestions.map(s => ({ value: s.name, label: `${s.name} ${s.gstin ? `- ${s.gstin}` : ''}` }))}
@@ -558,6 +564,8 @@ export default function Purchases() {
                               <Select
                                 styles={customSelectStyles}
                                 required
+                                menuPortalTarget={document.body}
+                                menuPosition="fixed"
                                 value={products.filter(p => p._id === item.productId).map(p => ({ value: p._id, label: p.name }))[0] || null}
                                 onChange={opt => handleItemChange(idx, 'productId', opt ? opt.value : '')}
                                 options={products.map(p => ({ value: p._id, label: p.name }))}
@@ -666,6 +674,8 @@ export default function Purchases() {
                     <CreatableSelect 
                       styles={customSelectStyles}
                       required 
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
                       value={editForm.supplierName ? { label: editForm.supplierName, value: editForm.supplierName } : null}
                       onChange={opt => handleSupplierName(opt ? opt.value : '', true)} 
                       options={supplierSuggestions.map(s => ({ value: s.name, label: `${s.name} ${s.gstin ? `- ${s.gstin}` : ''}` }))}
@@ -724,6 +734,8 @@ export default function Purchases() {
                               <Select
                                 styles={customSelectStyles}
                                 required
+                                menuPortalTarget={document.body}
+                                menuPosition="fixed"
                                 value={products.filter(p => p._id === item.productId).map(p => ({ value: p._id, label: p.name }))[0] || null}
                                 onChange={opt => handleItemChange(idx, 'productId', opt ? opt.value : '', true)}
                                 options={products.map(p => ({ value: p._id, label: p.name }))}
