@@ -329,7 +329,7 @@ export default function CreateInvoice() {
         ...items[idx],
         productId: p._id,
         description: p.name,
-        rate: p.price,
+        rate: p.price || p.purchasePrice || 0,
         gstRate: p.gstRate,
         hsnCode: p.hsnCode || '',
         purchasePrice: p.purchasePrice || 0
