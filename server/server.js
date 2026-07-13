@@ -10,24 +10,35 @@ connectDB();
 
 const app = express();
 
-// Manual preflight handler — catches OPTIONS before anything else
-// This ensures Cloudflare proxied preflight requests always get CORS headers
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+const ALLOWED_ORIGINS = [
+  'https://billing.apnakartz.com',
+  'http://billing.apnakartz.com',
+  'http://localhost:3000',
+  'http://localhost:5173'
+];
+
+// Robust CORS middleware — handles both OPTIONS preflight and normal requests
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    // Non-browser requests (e.g. curl, Postman) — allow
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
-  return res.sendStatus(200);
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
 app.use(cors({
-  origin: [
-    'https://billing.apnakartz.com',
-    'http://billing.apnakartz.com',
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ],
+  origin: ALLOWED_ORIGINS,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
