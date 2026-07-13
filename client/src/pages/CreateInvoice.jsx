@@ -149,11 +149,20 @@ export default function CreateInvoice() {
     ]).then(([prodRes, invRes, compRes, compListRes, myProdsRes]) => {
       // Deduplicate and normalize products
       const rawProducts = prodRes.data || [];
-      const myProducts = rawProducts.filter(p => p.companyId === user.companyId);
-      const otherProducts = rawProducts.filter(p => p.companyId !== user.companyId);
+      const myProducts = rawProducts.filter(p => p.companyId === user?.companyId);
+      const otherProducts = rawProducts.filter(p => p.companyId !== user?.companyId);
       
       const myProductNames = new Set(myProducts.map(p => (p.name || '').toUpperCase().trim()));
-      const filteredOtherProducts = otherProducts.filter(p => !myProductNames.has((p.name || '').toUpperCase().trim()));
+      
+      const filteredOtherProducts = [];
+      const seenOtherNames = new Set();
+      otherProducts.forEach(p => {
+        const n = (p.name || '').toUpperCase().trim();
+        if (!myProductNames.has(n) && !seenOtherNames.has(n)) {
+          seenOtherNames.add(n);
+          filteredOtherProducts.push(p);
+        }
+      });
       
       const finalProducts = [...myProducts, ...filteredOtherProducts].map(p => ({
         ...p,
