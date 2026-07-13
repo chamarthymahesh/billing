@@ -291,10 +291,14 @@ exports.createInvoice = async (req, res) => {
             isGst: (prod.gstRate || 0) > 0,
             paymentStatus: 'Paid'
           });
-          
-          // Update product stock with auto-purchased quantity
-          prod.stock = (prod.stock || 0) + billedQty;
-          await prod.save();
+          // Update product stock ONLY if we actually needed it (i.e. we were deficient)
+          // If we already had artificial stock (e.g. 80), we just created a purchase record to balance the books,
+          // but we shouldn't double-count the stock.
+          const actualDeficit = billedQty - Math.max(prod.stock || 0, 0);
+          if (actualDeficit > 0) {
+            prod.stock = (prod.stock || 0) + actualDeficit;
+            await prod.save();
+          }
         }
       }
 
