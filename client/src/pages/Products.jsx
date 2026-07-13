@@ -99,7 +99,8 @@ export default function Products() {
   };
 
   const handleNameChange = (val) => {
-    const existingProduct = products.find(p => p.name.toLowerCase() === val.toLowerCase());
+    val = (val || '').toUpperCase();
+    const existingProduct = products.find(p => p.name.toUpperCase() === val);
     if (existingProduct && !editing) {
       // Auto-fetch existing product details
       setForm(existingProduct);

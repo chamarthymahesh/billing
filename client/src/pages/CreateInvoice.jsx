@@ -147,7 +147,20 @@ export default function CreateInvoice() {
       API.get('/companies/list'),
       API.get('/purchases/my-products').catch(() => ({ data: [] }))
     ]).then(([prodRes, invRes, compRes, compListRes, myProdsRes]) => {
-      setProducts(prodRes.data);
+      // Deduplicate and normalize products
+      const rawProducts = prodRes.data || [];
+      const myProducts = rawProducts.filter(p => p.companyId === user.companyId);
+      const otherProducts = rawProducts.filter(p => p.companyId !== user.companyId);
+      
+      const myProductNames = new Set(myProducts.map(p => (p.name || '').toUpperCase().trim()));
+      const filteredOtherProducts = otherProducts.filter(p => !myProductNames.has((p.name || '').toUpperCase().trim()));
+      
+      const finalProducts = [...myProducts, ...filteredOtherProducts].map(p => ({
+        ...p,
+        name: (p.name || '').toUpperCase()
+      }));
+      setProducts(finalProducts);
+      
       setMyPurchasedProductIds(new Set(myProdsRes.data));
       console.log('My purchased product IDs set:', Array.from(new Set(myProdsRes.data)));
       setCurrentCompany(compRes.data);
@@ -634,7 +647,7 @@ export default function CreateInvoice() {
                       <td>
                         <input className="input-field item-input" placeholder="Description"
                           value={item.description}
-                          onChange={e => handleItem(idx, 'description', e.target.value)} required />
+                          onChange={e => handleItem(idx, 'description', e.target.value.toUpperCase())} required />
                       </td>
                       {form.isGst && (
                         <td>
