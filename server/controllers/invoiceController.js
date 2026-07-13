@@ -211,18 +211,24 @@ exports.createInvoice = async (req, res) => {
           
           let rate = prod.purchasePrice || prod.price || 0;
           
-          // Look for the same product in another company that has stock AND a valid price
-          const productWithStock = await Product.findOne({
+          // Look for the same product in another company that has a valid price (even if stock is 0)
+          const productWithPrice = await Product.findOne({
             name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
             _id: { $ne: prod._id },
             $or: [
               { purchasePrice: { $gt: 0 } },
               { price: { $gt: 0 } }
             ]
-          }).sort({ stock: -1, updatedAt: -1 });
+          }).sort({ updatedAt: -1 }).populate('companyId', 'name');
 
-          if (productWithStock) {
-            rate = productWithStock.purchasePrice || productWithStock.price || 0;
+          let supplierName = 'Auto Generated';
+          if (productWithPrice) {
+            rate = productWithPrice.purchasePrice || productWithPrice.price || 0;
+            if (productWithPrice.companyId && productWithPrice.companyId.name) {
+              supplierName = productWithPrice.companyId.name;
+            } else {
+              supplierName = 'Auto Transfer';
+            }
           }
           
           const subTotal = billedQty * rate;
@@ -232,7 +238,7 @@ exports.createInvoice = async (req, res) => {
           await Purchase.create({
             companyId: companyId,
             productId: pid,
-            supplierName: productWithStock ? 'Auto Transfer' : 'Auto Generated',
+            supplierName: supplierName,
             billNumber: `AUTO-PUR-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
             purchaseDate: new Date(),
             quantity: billedQty,
