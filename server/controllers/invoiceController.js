@@ -299,7 +299,9 @@ exports.createInvoice = async (req, res) => {
       }
 
       // --- Also handle products that HAVE purchase records but INSUFFICIENT STOCK ---
-      const allInvoiceProducts = await Product.find({ _id: { $in: productIds }, companyId: companyId });
+      // NOTE: Do NOT filter by companyId here — the productId from the invoice items
+      // may belong to a different company's product record. We find by ID only.
+      const allInvoiceProducts = await Product.find({ _id: { $in: productIds } }).populate('companyId', 'name gstin');
       console.log('🔍 Checking', allInvoiceProducts.length, 'products for stock deficit');
       for (const prod of allInvoiceProducts) {
         const pid = prod._id.toString();
@@ -316,32 +318,58 @@ exports.createInvoice = async (req, res) => {
           const deficit = billedQty - Math.max(prod.stock || 0, 0);
           console.log(`⚡ Deficit detected for ${prod.name}: need ${deficit} more units`);
 
+          // The product may belong to Virat (different company). Search other companies for stock.
+          const prodCompanyId = prod.companyId?._id?.toString() || prod.companyId?.toString();
+          const excludeIds = [null, companyId, prodCompanyId].filter(Boolean);
           const sourceProductWithStock = await Product.findOne({
             name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
-            companyId: { $nin: [null, companyId] },
+            companyId: { $nin: excludeIds },
             stock: { $gte: deficit }
           }).populate('companyId', 'name gstin');
 
-          if (sourceProductWithStock) {
-            console.log('🔎 Source product found for transfer:', sourceProductWithStock._id, 'Company:', sourceProductWithStock.companyId?.name, 'stock before:', sourceProductWithStock.stock);
-            let rate = sourceProductWithStock.purchasePrice || sourceProductWithStock.price || prod.purchasePrice || prod.price || 0;
-            if (!rate || rate <= 0) rate = 1; // fallback so Purchase.create doesn't fail
-            const supplierName = sourceProductWithStock.companyId?.name || 'Auto Transfer';
-            const supplierGstin = sourceProductWithStock.companyId?.gstin || '';
+          // If no other company has it, check if the product itself (Virat's) has stock
+          const finalSource = sourceProductWithStock || (
+            prod.stock >= deficit ? prod : null
+          );
 
-            // Deduct stock from source company
-            sourceProductWithStock.stock -= deficit;
-            await sourceProductWithStock.save();
-            console.log('✅ Deducted', deficit, 'units from source. New source stock:', sourceProductWithStock.stock);
+          if (finalSource) {
+            console.log('🔎 Source found for transfer:', finalSource._id, 'Company:', finalSource.companyId?.name || finalSource.companyId, 'stock before:', finalSource.stock);
+            let rate = finalSource.purchasePrice || finalSource.price || prod.purchasePrice || prod.price || 0;
+            if (!rate || rate <= 0) rate = 1; // fallback so Purchase.create doesn't fail
+            const supplierCompanyId = finalSource.companyId?._id || finalSource.companyId;
+            const supplierName = finalSource.companyId?.name || 'Auto Transfer';
+            const supplierGstin = finalSource.companyId?.gstin || '';
+
+            // Deduct stock from source (Virat)
+            finalSource.stock -= deficit;
+            await finalSource.save();
+            console.log('✅ Deducted', deficit, 'from source. New source stock:', finalSource.stock);
 
             const subTotal = deficit * rate;
             const gstAmount = (subTotal * (prod.gstRate || 0)) / 100;
             const totalAmount = subTotal + gstAmount;
 
-            console.log('Creating purchase record: qty', deficit, 'rate', rate, 'subTotal', subTotal);
+            // Find or create the matching product in Sithara (target company)
+            let targetProduct = await Product.findOne({ name: prod.name, companyId: companyId });
+            if (!targetProduct) {
+              targetProduct = await Product.create({
+                name: prod.name,
+                brand: prod.brand,
+                productType: prod.productType,
+                price: prod.price,
+                purchasePrice: prod.purchasePrice,
+                gstRate: prod.gstRate,
+                hsnCode: prod.hsnCode,
+                companyId: companyId,
+                stock: 0
+              });
+              console.log('✅ Created target product in Sithara:', targetProduct._id);
+            }
+
+            console.log('Creating purchase record: qty', deficit, 'rate', rate, 'for company', companyId);
             await Purchase.create({
               companyId: companyId,
-              productId: pid,
+              productId: targetProduct._id,
               supplierName: supplierName,
               supplierGstin: supplierGstin,
               billNumber: `AUTO-TRANSFER-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -355,12 +383,14 @@ exports.createInvoice = async (req, res) => {
               isGst: (prod.gstRate || 0) > 0,
               paymentStatus: 'Paid'
             });
-            console.log('✅ Purchase record created for transfer');
+            console.log('✅ Purchase record created for transfer to Sithara');
 
-            // Add transferred stock to this company's product
-            prod.stock = (prod.stock || 0) + deficit;
-            await prod.save();
-            console.log('✅ Destination product stock updated, new stock:', prod.stock);
+            // Add transferred stock to Sithara's product
+            targetProduct.stock = (targetProduct.stock || 0) + deficit;
+            await targetProduct.save();
+            console.log('✅ Sithara product stock updated, new stock:', targetProduct.stock);
+          } else {
+            console.warn('⚠️ No source with sufficient stock found for', prod.name, '— needed', deficit, 'units');
           }
         }
       }
