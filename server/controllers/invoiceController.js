@@ -211,17 +211,18 @@ exports.createInvoice = async (req, res) => {
           
           let rate = prod.purchasePrice || prod.price || 0;
           
-          // Look for the same product in another company that has stock to get the purchase price
+          // Look for the same product in another company that has stock AND a valid price
           const productWithStock = await Product.findOne({
-            name: prod.name,
-            stock: { $gt: 0 },
-            _id: { $ne: prod._id }
-          }).sort({ stock: -1 });
+            name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
+            _id: { $ne: prod._id },
+            $or: [
+              { purchasePrice: { $gt: 0 } },
+              { price: { $gt: 0 } }
+            ]
+          }).sort({ stock: -1, updatedAt: -1 });
 
-          if (productWithStock && productWithStock.purchasePrice) {
-            rate = productWithStock.purchasePrice;
-          } else if (productWithStock && productWithStock.price) {
-            rate = productWithStock.price;
+          if (productWithStock) {
+            rate = productWithStock.purchasePrice || productWithStock.price || 0;
           }
           
           const subTotal = billedQty * rate;
