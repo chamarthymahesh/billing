@@ -319,6 +319,46 @@ exports.createInvoice = async (req, res) => {
           }).populate('companyId', 'name gstin');
 
           if (sourceProductWithStock) {
+            console.log('🔎 Source product found for transfer:', sourceProductWithStock._id, 'Company:', sourceProductWithStock.companyId?.name, 'stock before:', sourceProductWithStock.stock);
+            const rate = sourceProductWithStock.purchasePrice || sourceProductWithStock.price || prod.purchasePrice || prod.price || 0;
+            const supplierName = sourceProductWithStock.companyId?.name || 'Auto Transfer';
+            const supplierGstin = sourceProductWithStock.companyId?.gstin || '';
+
+            // Deduct stock from source company
+            sourceProductWithStock.stock -= deficit;
+            await sourceProductWithStock.save();
+            console.log('✅ Deducted', deficit, 'units from source. New source stock:', sourceProductWithStock.stock);
+
+            const subTotal = deficit * rate;
+            const gstAmount = (subTotal * (prod.gstRate || 0)) / 100;
+            const totalAmount = subTotal + gstAmount;
+
+            console.log('Creating purchase record: qty', deficit, 'rate', rate, 'subTotal', subTotal);
+            await Purchase.create({
+              companyId: companyId,
+              productId: pid,
+              supplierName: supplierName,
+              supplierGstin: supplierGstin,
+              billNumber: `AUTO-TRANSFER-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              purchaseDate: new Date(),
+              quantity: deficit,
+              rate: rate,
+              gstRate: prod.gstRate || 0,
+              subTotal: subTotal,
+              totalGst: gstAmount,
+              totalAmount: totalAmount,
+              isGst: (prod.gstRate || 0) > 0,
+              paymentStatus: 'Paid'
+            });
+            console.log('✅ Purchase record created for transfer');
+
+            // Add transferred stock to this company's product
+            prod.stock = (prod.stock || 0) + deficit;
+            await prod.save();
+            console.log('✅ Destination product stock updated, new stock:', prod.stock);
+          } else {
+            console.warn('⚠️ No source product with sufficient stock found for', prod.name);
+          }
             const rate = sourceProductWithStock.purchasePrice || sourceProductWithStock.price || prod.purchasePrice || prod.price || 0;
             const supplierName = sourceProductWithStock.companyId?.name || 'Auto Transfer';
             const supplierGstin = sourceProductWithStock.companyId?.gstin || '';
