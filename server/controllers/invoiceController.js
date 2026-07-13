@@ -297,6 +297,64 @@ exports.createInvoice = async (req, res) => {
           await prod.save();
         }
       }
+
+      // --- Also handle products that HAVE purchase records but INSUFFICIENT STOCK ---
+      const allInvoiceProducts = await Product.find({ _id: { $in: productIds }, companyId: companyId });
+      for (const prod of allInvoiceProducts) {
+        const pid = prod._id.toString();
+        // Skip products already handled by the missingIds block above
+        if (missingIds.includes(pid)) continue;
+
+        const billedQty = items.filter(it => it.productId?.toString() === pid)
+          .reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+
+        if ((prod.stock || 0) < billedQty) {
+          // Need more stock — check if another company has it
+          const deficit = billedQty - Math.max(prod.stock || 0, 0);
+
+          const sourceProductWithStock = await Product.findOne({
+            name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
+            companyId: { $nin: [null, companyId] },
+            stock: { $gte: deficit }
+          }).populate('companyId', 'name gstin');
+
+          if (sourceProductWithStock) {
+            const rate = sourceProductWithStock.purchasePrice || sourceProductWithStock.price || prod.purchasePrice || prod.price || 0;
+            const supplierName = sourceProductWithStock.companyId?.name || 'Auto Transfer';
+            const supplierGstin = sourceProductWithStock.companyId?.gstin || '';
+
+            // Deduct stock from source company
+            sourceProductWithStock.stock -= deficit;
+            await sourceProductWithStock.save();
+
+            const subTotal = deficit * rate;
+            const gstAmount = (subTotal * (prod.gstRate || 0)) / 100;
+            const totalAmount = subTotal + gstAmount;
+
+            await Purchase.create({
+              companyId: companyId,
+              productId: pid,
+              supplierName: supplierName,
+              supplierGstin: supplierGstin,
+              billNumber: `AUTO-TRANSFER-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              purchaseDate: new Date(),
+              quantity: deficit,
+              rate: rate,
+              gstRate: prod.gstRate || 0,
+              subTotal: subTotal,
+              totalGst: gstAmount,
+              totalAmount: totalAmount,
+              isGst: (prod.gstRate || 0) > 0,
+              paymentStatus: 'Paid'
+            });
+
+            // Add transferred stock to this company's product
+            prod.stock = (prod.stock || 0) + deficit;
+            await prod.save();
+          }
+        }
+      }
+      // ---------------------------------------------------------------
     }
     // ---------------------------------------------------
 
