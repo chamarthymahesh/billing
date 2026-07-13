@@ -321,6 +321,11 @@ exports.createInvoice = async (req, res) => {
           // The product may belong to Virat (different company). Search other companies for stock.
           const prodCompanyId = prod.companyId?._id?.toString() || prod.companyId?.toString();
           const excludeIds = [null, companyId, prodCompanyId].filter(Boolean);
+
+          // Debug: show all matching products across all companies
+          const allMatchingProds = await Product.find({ name: { $regex: new RegExp(`^${prod.name}$`, 'i') } }).populate('companyId', 'name');
+          console.log('All companies with', prod.name, ':', allMatchingProds.map(p => `${p.companyId?.name || p.companyId}: stock=${p.stock}`));
+
           const sourceProductWithStock = await Product.findOne({
             name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
             companyId: { $nin: excludeIds },
