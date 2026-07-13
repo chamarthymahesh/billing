@@ -215,15 +215,19 @@ exports.createInvoice = async (req, res) => {
           const productWithPrice = await Product.findOne({
             name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
             _id: { $ne: prod._id },
+            companyId: { $ne: null },
             $or: [
               { purchasePrice: { $gt: 0 } },
               { price: { $gt: 0 } }
             ]
           }).sort({ updatedAt: -1 }).populate('companyId', 'name');
 
+          // Default supplier name if we cannot determine source company
           let supplierName = 'Auto Generated';
           if (productWithPrice) {
-            rate = productWithPrice.purchasePrice || productWithPrice.price || 0;
+            // Use the price from the source product if available
+            rate = productWithPrice.purchasePrice || productWithPrice.price || rate;
+            // Prefer the source company's name for supplier regardless of price validity
             if (productWithPrice.companyId && productWithPrice.companyId.name) {
               supplierName = productWithPrice.companyId.name;
             } else {
