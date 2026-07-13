@@ -300,6 +300,7 @@ exports.createInvoice = async (req, res) => {
 
       // --- Also handle products that HAVE purchase records but INSUFFICIENT STOCK ---
       const allInvoiceProducts = await Product.find({ _id: { $in: productIds }, companyId: companyId });
+      console.log('🔍 Checking', allInvoiceProducts.length, 'products for stock deficit');
       for (const prod of allInvoiceProducts) {
         const pid = prod._id.toString();
         // Skip products already handled by the missingIds block above
@@ -308,9 +309,12 @@ exports.createInvoice = async (req, res) => {
         const billedQty = items.filter(it => it.productId?.toString() === pid)
           .reduce((sum, it) => sum + Number(it.quantity || 0), 0);
 
+        console.log(`📦 ${prod.name}: stock=${prod.stock}, billedQty=${billedQty}`);
+
         if ((prod.stock || 0) < billedQty) {
           // Need more stock — check if another company has it
           const deficit = billedQty - Math.max(prod.stock || 0, 0);
+          console.log(`⚡ Deficit detected for ${prod.name}: need ${deficit} more units`);
 
           const sourceProductWithStock = await Product.findOne({
             name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
@@ -320,7 +324,8 @@ exports.createInvoice = async (req, res) => {
 
           if (sourceProductWithStock) {
             console.log('🔎 Source product found for transfer:', sourceProductWithStock._id, 'Company:', sourceProductWithStock.companyId?.name, 'stock before:', sourceProductWithStock.stock);
-            const rate = sourceProductWithStock.purchasePrice || sourceProductWithStock.price || prod.purchasePrice || prod.price || 0;
+            let rate = sourceProductWithStock.purchasePrice || sourceProductWithStock.price || prod.purchasePrice || prod.price || 0;
+            if (!rate || rate <= 0) rate = 1; // fallback so Purchase.create doesn't fail
             const supplierName = sourceProductWithStock.companyId?.name || 'Auto Transfer';
             const supplierGstin = sourceProductWithStock.companyId?.gstin || '';
 
