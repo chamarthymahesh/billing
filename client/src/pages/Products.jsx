@@ -37,7 +37,19 @@ export default function Products() {
 
   const fetchProducts = () => {
     setLoading(true);
-    API.get('/products?filter=purchased').then(r => setProducts(r.data)).finally(() => setLoading(false));
+    API.get('/products?filter=purchased').then(r => {
+      const data = r.data || [];
+      const uniqueProducts = [];
+      const seen = new Set();
+      data.forEach(p => {
+        const nameUpper = (p.name || '').toUpperCase().trim();
+        if (!seen.has(nameUpper)) {
+          seen.add(nameUpper);
+          uniqueProducts.push(p);
+        }
+      });
+      setProducts(uniqueProducts);
+    }).finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchProducts(); }, []);
