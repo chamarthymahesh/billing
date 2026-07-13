@@ -619,12 +619,12 @@ export default function CreateInvoice() {
                           menuPortalTarget={document.body}
                           menuPosition="fixed"
                           value={products.filter(p => p._id === item.productId).map(p => {
-                            const isTransfer = !myPurchasedProductIds.has(p._id.toString()) || (p.stock != null && p.stock <= 0);
+                            const isTransfer = (p.companyId && p.companyId !== user.companyId) || !myPurchasedProductIds.has(p._id.toString()) || (p.stock != null && p.stock <= 0);
                             return { value: p._id, label: isTransfer ? `${p.name} 🌐 (Auto-Transfer)` : p.name };
                           })[0] || null}
                           onChange={opt => fillFromProduct(idx, opt ? opt.value : '')}
                           options={products.map(p => {
-                            const isTransfer = !myPurchasedProductIds.has(p._id.toString()) || (p.stock != null && p.stock <= 0);
+                            const isTransfer = (p.companyId && p.companyId !== user.companyId) || !myPurchasedProductIds.has(p._id.toString()) || (p.stock != null && p.stock <= 0);
                             return { value: p._id, label: isTransfer ? `${p.name} 🌐 (Auto-Transfer)` : p.name };
                           })}
                           placeholder="Select..."
