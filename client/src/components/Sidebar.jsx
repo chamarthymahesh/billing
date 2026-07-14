@@ -5,18 +5,18 @@ import './Sidebar.css';
 
 export const menuItems = [
   { label: 'Dashboard', icon: '📊', path: '/dashboard', roles: ['companyadmin'] },
-  { label: 'Dashboard', icon: '📊', path: '/super-admin/dashboard', roles: ['superadmin'] },
-  { label: 'Companies', icon: '🏢', path: '/super-admin/companies', roles: ['superadmin'] },
+  { label: 'Dashboard', icon: '📊', path: '/super-admin/dashboard', roles: ['superadmin', 'manager'] },
+  { label: 'Companies', icon: '🏢', path: '/super-admin/companies', roles: ['superadmin', 'manager'] },
   { label: 'Invoices', icon: '🧾', path: '/invoices', roles: ['companyadmin'] },
   { label: 'Create Invoice', icon: '✏️', path: '/invoices/create', roles: ['companyadmin'] },
-  { label: 'Purchases', icon: '🛒', path: '/purchases', roles: ['companyadmin', 'superadmin'] },
-  { label: 'Products', icon: '📦', path: '/products', roles: ['companyadmin', 'superadmin'] },
+  { label: 'Purchases', icon: '🛒', path: '/purchases', roles: ['companyadmin', 'superadmin', 'manager'] },
+  { label: 'Products', icon: '📦', path: '/products', roles: ['companyadmin', 'superadmin', 'manager'] },
   { label: 'Reports', icon: '📈', path: '/reports', roles: [] },
   { label: 'Transport', icon: '🚚', path: '/transport', roles: ['companyadmin'] },
   { label: 'Employees', icon: '👥', path: '/employees', roles: ['companyadmin'] },
-  { label: 'Settings', icon: '⚙️', path: '/settings', roles: ['companyadmin', 'superadmin'] },
-  { label: 'All Invoices', icon: '🧾', path: '/super-admin/invoices', roles: ['superadmin'] },
-  { label: 'Global Stock', icon: '🏢', path: '/super-admin/global-stock', roles: ['superadmin'] }
+  { label: 'Settings', icon: '⚙️', path: '/settings', roles: ['companyadmin', 'superadmin', 'manager'] },
+  { label: 'All Invoices', icon: '🧾', path: '/super-admin/invoices', roles: ['superadmin', 'manager'] },
+  { label: 'Global Stock', icon: '🏢', path: '/super-admin/global-stock', roles: ['superadmin', 'manager'] }
 ];
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,7 +34,6 @@ export default function Sidebar() {
   return user && item.roles.includes(user.role);
 });
 console.log('Filtered menu:', filteredMenu);
-
 
   return (
     <motion.div 
@@ -74,7 +73,7 @@ console.log('Filtered menu:', filteredMenu);
             <div className="user-avatar">{user?.name?.charAt(0)?.toUpperCase()}</div>
             <div>
               <div className="user-name">{user?.name}</div>
-              <div className="user-role">{user?.role === 'superadmin' ? '👑 Super Admin' : '🏢 Admin'}</div>
+              <div className="user-role">{user?.role === 'superadmin' ? '👑 Super Admin' : user?.role === 'manager' ? '🛡️ Manager' : '🏢 Admin'}</div>
             </div>
           </motion.div>
         )}

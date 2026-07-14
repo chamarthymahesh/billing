@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import API from '../api/axiosInstance';
 import Layout from '../components/Layout';
 import './SuperAdmin.css';
 
 export default function SuperAdmin() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -286,7 +288,9 @@ export default function SuperAdmin() {
                           <button className="action-btn-icon view" onClick={() => viewCompanyInvoices(c._id)} title="View Invoices">👁️</button>
                           <button className="action-btn-icon edit" onClick={() => openEdit(c)} title="Edit">✏️</button>
                           <button className="action-btn-icon" style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa' }} onClick={() => openResetModal(c)} title="Reset Password">🔑</button>
-                          <button className="action-btn-icon del" onClick={() => handleDelete(c._id)} title="Delete">🗑️</button>
+                          {user?.role !== 'manager' && (
+                            <button className="action-btn-icon del" onClick={() => handleDelete(c._id)} title="Delete">🗑️</button>
+                          )}
                         </div>
                       </td>
                     </tr>

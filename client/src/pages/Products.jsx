@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import API from '../api/axiosInstance';
 import Layout from '../components/Layout';
+import { useAuth } from '../context/AuthContext';
 import './Products.css';
 
 const EMPTY = { 
@@ -25,6 +26,7 @@ const GST_RATES = [0, 5, 12, 18, 28];
 const UNITS = ['Pcs', 'Kg', 'Ltr', 'Box', 'Doz', 'Mtr', 'Pkt', 'Set'];
 
 export default function Products() {
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -384,7 +386,9 @@ export default function Products() {
                     <td>
                       <div className="action-btns">
                         <button className="action-btn-icon edit" onClick={() => openEdit(p)}>✏️</button>
-                        <button className="action-btn-icon del" onClick={() => handleDelete(p._id)}>🗑️</button>
+                        {user?.role !== 'manager' && (
+                          <button className="action-btn-icon del" onClick={() => handleDelete(p._id)}>🗑️</button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -17,7 +17,7 @@ export default function Login() {
     setError('');
     try {
       const user = await login(form.email, form.password);
-      if (user.role === 'superadmin') {
+      if (user.role === 'superadmin' || user.role === 'manager') {
         navigate('/super-admin');
       } else {
         navigate('/dashboard');

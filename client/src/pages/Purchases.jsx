@@ -929,7 +929,9 @@ export default function Purchases() {
                       <div className="action-btns">
                         <button className="action-btn-icon view" onClick={() => openView(g.billNumber)} title="View Items">👁️</button>
                         <button className="action-btn-icon edit" onClick={() => openEdit(g)} title="Edit Bill">✏️</button>
-                        <button className="action-btn-icon del" onClick={() => handleDeleteBill(g.billNumber, g)} title="Delete Bill">🗑️</button>
+                        {user?.role !== 'manager' && (
+                          <button className="action-btn-icon del" onClick={() => handleDeleteBill(g.billNumber, g)} title="Delete Bill">🗑️</button>
+                        )}
                       </div>
                     </td>
                   </tr>

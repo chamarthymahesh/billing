@@ -26,6 +26,12 @@ const protect = async (req, res, next) => {
       const user = await User.findById(decoded.id).select('-password');
       if (!user) return res.status(401).json({ message: 'User not found, unauthorized' });
       req.user = user;
+      
+      // Globally block DELETE requests for managers
+      if (req.user.role === 'manager' && req.method === 'DELETE') {
+        return res.status(403).json({ message: 'Managers are not allowed to delete records.' });
+      }
+      
       return next();
     } catch (error) {
       return res.status(401).json({ message: 'Not authorized, token failed' });
@@ -38,11 +44,19 @@ const protect = async (req, res, next) => {
 };
 
 const superAdminOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'superadmin') {
+  if (req.user && (req.user.role === 'superadmin' || req.user.role === 'manager')) {
     next();
   } else {
-    res.status(403).json({ message: 'Super Admin access required' });
+    res.status(403).json({ message: 'Super Admin or Manager access required' });
   }
 };
 
-module.exports = { protect, superAdminOnly };
+const strictSuperAdminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'superadmin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Strict Super Admin access required for this action' });
+  }
+};
+
+module.exports = { protect, superAdminOnly, strictSuperAdminOnly };
