@@ -84,7 +84,9 @@ export default function Purchases() {
 
   const fetchPurchases = async () => {
     try {
-      const { data } = await API.get('/purchases');
+      const { data } = await API.get('/purchases', {
+        params: { _t: Date.now() } // cache-bust to always get fresh data
+      });
       setPurchases(data);
     } catch (err) {
       console.error(err);
@@ -94,33 +96,18 @@ export default function Purchases() {
   };
 
   const fetchProducts = async () => {
-    try {
-      const { data } = await API.get('/products');
-      const rawProducts = data || [];
-      const myProducts = rawProducts.filter(p => p.companyId === user?.companyId);
-      const otherProducts = rawProducts.filter(p => p.companyId !== user?.companyId);
-      
-      const myProductNames = new Set(myProducts.map(p => (p.name || '').toUpperCase().trim()));
-      
-      const filteredOtherProducts = [];
-      const seenOtherNames = new Set();
-      otherProducts.forEach(p => {
-        const n = (p.name || '').toUpperCase().trim();
-        if (!myProductNames.has(n) && !seenOtherNames.has(n)) {
-          seenOtherNames.add(n);
-          filteredOtherProducts.push(p);
-        }
-      });
-      
-      const finalProducts = [...myProducts, ...filteredOtherProducts].map(p => ({
-        ...p,
-        name: (p.name || '').toUpperCase()
-      }));
-      setProducts(finalProducts);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    const { data } = await API.get('/products');
+    const rawProducts = data || [];
+    const finalProducts = rawProducts.map(p => ({
+      ...p,
+      name: (p.name || '').toUpperCase()
+    }));
+    setProducts(finalProducts);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const fetchCompanies = async () => {
     try {

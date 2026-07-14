@@ -37,7 +37,7 @@ export default function Products() {
 
   const fetchProducts = () => {
     setLoading(true);
-    API.get('/products?filter=purchased').then(r => {
+    API.get('/products').then(r => {
       const data = r.data || [];
       const uniqueProducts = [];
       const seen = new Set();
@@ -340,7 +340,7 @@ export default function Products() {
 
       <div className="glass-card">
         <div className="table-filters">
-          <input id="product-search" className="input-field search-input" placeholder="Search products..."
+          <input id="product-search" className="input-field search-input" placeholder="Search for Cosco, Football, Delta Force..."
             value={search} onChange={e => setSearch(e.target.value)} />
           <span className="count-badge">{filtered.length} products</span>
         </div>

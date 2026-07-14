@@ -230,42 +230,37 @@ exports.createInvoice = async (req, res) => {
             sourceProductWithStock.stock -= billedQty;
             await sourceProductWithStock.save();
           } else {
-            // Strategy 1: Find the most recent real purchase for ANY product with the same name
-            // (across any company) that has a real supplier name and valid rate
-            const allSameNameProducts = await Product.find({
-              name: { $regex: new RegExp(`^${prod.name}$`, 'i') }
-            }).select('_id');
-            const sameNameProductIds = allSameNameProducts.map(p => p._id);
-
+            // No company has enough stock — look for the most recent REAL purchase
+            // for THIS specific company's product only (not cross-company)
             const existingPurchase = await Purchase.findOne({
-              productId: { $in: sameNameProductIds },
+              productId: pid,
+              companyId: companyId,
               supplierName: { $nin: ['Auto Generated', 'Auto Transfer', ''] },
               rate: { $gt: 0 }
             }).sort({ purchaseDate: -1 });
 
             if (existingPurchase) {
-              // Use rate and supplier from the real historical purchase
+              // Use rate and supplier from the real historical purchase for THIS company
               rate = existingPurchase.rate;
               supplierName = existingPurchase.supplierName;
               supplierGstin = existingPurchase.supplierGstin || '';
             } else {
-              // Strategy 2: Look for any product with same name that has a companyId and valid price
+              // Last resort: find any source company that has this product with a price
               const productWithPrice = await Product.findOne({
                 name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
-                companyId: { $ne: null },
+                companyId: { $nin: [null, companyId] },
                 $or: [
                   { purchasePrice: { $gt: 0 } },
                   { price: { $gt: 0 } }
                 ]
-              }).sort({ updatedAt: -1 }).populate('companyId', 'name');
+              }).sort({ updatedAt: -1 }).populate('companyId', 'name gstin');
 
               if (productWithPrice) {
                 rate = productWithPrice.purchasePrice || productWithPrice.price || rate;
-                supplierName = (productWithPrice.companyId && productWithPrice.companyId.name)
-                  ? productWithPrice.companyId.name
-                  : 'Auto Transfer';
-              } else if (rate > 0) {
-                // We have a price from the product itself, just no identifiable supplier
+                supplierName = productWithPrice.companyId?.name || 'Auto Transfer';
+                supplierGstin = productWithPrice.companyId?.gstin || '';
+              } else {
+                // No source found at all
                 supplierName = 'Auto Transfer';
               }
             }
