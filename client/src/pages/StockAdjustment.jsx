@@ -26,7 +26,7 @@ export default function StockAdjustment() {
       const isAdminLike = user.role === 'superadmin' || user.role === 'manager';
       const filtered = isAdminLike
         ? data
-        : data.filter(g => g.companyId === user.companyId || g.companyId === null || g.companyId === undefined);
+        : data.filter(g => g.companyId === user.companyId || g.companyId === null || g.companyId === undefined || g.companyId === 'unknown');
       setGroups(filtered);
       // Auto-expand all companies
       const expanded = {};

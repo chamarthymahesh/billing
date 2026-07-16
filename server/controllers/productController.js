@@ -72,6 +72,7 @@ exports.deleteProduct = async (req, res) => {
 exports.getNegativeStock = async (req, res) => {
   try {
     const Company = require('../models/Company');
+    const Invoice = require('../models/Invoice'); // Added to determine source company for global products
     const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
 
     const filter = isAdminLike
@@ -80,11 +81,26 @@ exports.getNegativeStock = async (req, res) => {
 
     const products = await Product.find(filter).populate('companyId', 'name').lean();
 
-    // Group by company
+    // Group by company, using sale's companyId for products without an explicit companyId
     const grouped = {};
     for (const p of products) {
-      const cId = p.companyId?._id?.toString() || 'unknown';
-      const cName = p.companyId?.name || 'Unknown Company';
+      let cId = p.companyId?._id?.toString();
+      let cName = p.companyId?.name;
+
+      // If product has no companyId, attempt to infer from a sale invoice
+      if (!cId) {
+        const saleInvoice = await Invoice.findOne({ 'items.productId': p._id }).sort({ createdAt: -1 }).lean();
+        if (saleInvoice && saleInvoice.companyId) {
+          cId = saleInvoice.companyId.toString();
+          // Fetch company name for display
+          const comp = await Company.findById(cId).select('name').lean();
+          cName = comp ? comp.name : 'Unknown Company';
+        } else {
+          cId = 'unknown';
+          cName = 'Unknown Company';
+        }
+      }
+
       if (!grouped[cId]) grouped[cId] = { companyId: cId, companyName: cName, products: [] };
       grouped[cId].products.push({
         _id: p._id,
