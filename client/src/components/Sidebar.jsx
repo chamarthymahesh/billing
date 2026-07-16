@@ -16,7 +16,8 @@ export const menuItems = [
   { label: 'Employees', icon: '👥', path: '/employees', roles: ['companyadmin'] },
   { label: 'Settings', icon: '⚙️', path: '/settings', roles: ['companyadmin', 'superadmin', 'manager'] },
   { label: 'All Invoices', icon: '🧾', path: '/super-admin/invoices', roles: ['superadmin', 'manager'] },
-  { label: 'Global Stock', icon: '🏢', path: '/super-admin/global-stock', roles: ['superadmin', 'manager'] }
+  { label: 'Global Stock', icon: '🏢', path: '/super-admin/global-stock', roles: ['superadmin', 'manager'] },
+  { label: 'Stock Adjustment', icon: '⚖️', path: '/stock-adjustment', roles: ['superadmin', 'manager', 'companyadmin'] },
 ];
 
 import { motion, AnimatePresence } from 'framer-motion';

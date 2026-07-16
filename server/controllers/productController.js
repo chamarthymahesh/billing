@@ -62,3 +62,44 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+/**
+ * GET /api/products/negative-stock
+ * Returns all products with negative stock, grouped by company.
+ * superadmin/manager: all companies
+ * companyadmin: own company only
+ */
+exports.getNegativeStock = async (req, res) => {
+  try {
+    const Company = require('../models/Company');
+    const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
+
+    const filter = isAdminLike
+      ? { stock: { $lt: 0 } }
+      : { companyId: req.user.companyId, stock: { $lt: 0 } };
+
+    const products = await Product.find(filter).populate('companyId', 'name').lean();
+
+    // Group by company
+    const grouped = {};
+    for (const p of products) {
+      const cId = p.companyId?._id?.toString() || 'unknown';
+      const cName = p.companyId?.name || 'Unknown Company';
+      if (!grouped[cId]) grouped[cId] = { companyId: cId, companyName: cName, products: [] };
+      grouped[cId].products.push({
+        _id: p._id,
+        name: p.name,
+        brand: p.brand,
+        sku: p.sku,
+        stock: p.stock,
+        purchasePrice: p.purchasePrice,
+        price: p.price,
+        unit: p.unit,
+      });
+    }
+
+    res.json(Object.values(grouped));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -1,0 +1,229 @@
+/* ============================================
+   Stock Adjustment Page Styles
+   ============================================ */
+
+.sa-page {
+  padding: 0;
+}
+
+/* Header */
+.sa-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sa-alert-badge {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Search */
+.sa-search-bar {
+  margin-bottom: 24px;
+}
+
+.sa-search-bar .input-field {
+  max-width: 480px;
+}
+
+/* Empty State */
+.sa-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 24px;
+  text-align: center;
+  gap: 12px;
+}
+
+.sa-empty-icon {
+  font-size: 3rem;
+}
+
+.sa-empty h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sa-empty p {
+  color: var(--text-secondary);
+  max-width: 360px;
+}
+
+/* Groups */
+.sa-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sa-group {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Company Header Row */
+.sa-company-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.2s;
+}
+
+.sa-company-header:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.sa-company-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sa-company-icon {
+  font-size: 1.5rem;
+}
+
+.sa-company-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sa-company-count {
+  font-size: 0.8rem;
+  color: #f87171;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.sa-expand-icon {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  transition: transform 0.3s;
+  display: inline-block;
+}
+
+.sa-expand-icon.open {
+  transform: rotate(180deg);
+}
+
+/* Table */
+.sa-table-wrap {
+  overflow: hidden;
+}
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.sa-table thead tr {
+  background: rgba(255,255,255,0.04);
+}
+
+.sa-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sa-table td {
+  padding: 14px 16px;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+
+.sa-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.sa-table tbody tr:hover td {
+  background: rgba(255,255,255,0.025);
+}
+
+.sa-product-name {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.sa-sku {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.sa-stock-negative {
+  display: inline-block;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.sa-no-price {
+  color: #f59e0b;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Create Purchase Button */
+.sa-create-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.sa-create-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+}
+
+.sa-create-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sa-table th:nth-child(3),
+  .sa-table td:nth-child(3),
+  .sa-table th:nth-child(4),
+  .sa-table td:nth-child(4) {
+    display: none;
+  }
+
+  .sa-company-header {
+    padding: 14px 16px;
+  }
+}

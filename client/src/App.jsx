@@ -16,6 +16,7 @@ import Purchases from './pages/Purchases';
 import GlobalStock from './pages/GlobalStock';
 import Transport from './pages/Transport';
 import Employees from './pages/Employees';
+import StockAdjustment from './pages/StockAdjustment';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
           <Route path="/transport" element={<ProtectedRoute><Transport /></ProtectedRoute>} />
           <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
+          <Route path="/stock-adjustment" element={<ProtectedRoute><StockAdjustment /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/super-admin" element={<ProtectedRoute adminOnly><Navigate to="/super-admin/dashboard" /></ProtectedRoute>} />
           <Route path="/super-admin/dashboard" element={<ProtectedRoute adminOnly><SuperAdminDashboard /></ProtectedRoute>} />

@@ -3,6 +3,7 @@ import API from '../api/axiosInstance';
 import Layout from '../components/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import './Purchases.css';
@@ -57,6 +58,7 @@ const EMPTY_ITEM = { productId: '', quantity: 1, rate: 0, gstRate: 18, isGst: tr
 
 export default function Purchases() {
   const { user } = useAuth();
+  const location = useLocation();
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -136,6 +138,26 @@ export default function Purchases() {
       fetchCompanies();
     }
   }, [user]);
+
+  // Pre-fill from Stock Adjustment navigation
+  useEffect(() => {
+    const state = location.state;
+    if (state?.prefillProductId && products.length > 0) {
+      const matched = products.find(p => p._id === state.prefillProductId);
+      setForm(f => ({
+        ...f,
+        companyId: state.prefillCompanyId || f.companyId,
+        items: [{
+          ...EMPTY_ITEM,
+          productId: state.prefillProductId,
+          _productName: matched?.name || state.prefillProductName || '',
+        }]
+      }));
+      setShowForm(true);
+      // Clear state so re-render doesn't re-open
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, products]);
 
 
 
