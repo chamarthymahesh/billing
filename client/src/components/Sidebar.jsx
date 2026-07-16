@@ -5,13 +5,13 @@ import './Sidebar.css';
 
 export const menuItems = [
   { label: 'Dashboard', icon: '📊', path: '/dashboard', roles: ['companyadmin'] },
-  { label: 'Dashboard', icon: '📊', path: '/super-admin/dashboard', roles: ['superadmin', 'manager'] },
+  { label: 'Dashboard', icon: '📊', path: '/super-admin/dashboard', roles: ['superadmin'] },
   { label: 'Companies', icon: '🏢', path: '/super-admin/companies', roles: ['superadmin', 'manager'] },
   { label: 'Invoices', icon: '🧾', path: '/invoices', roles: ['companyadmin', 'manager'] },
   { label: 'Create Invoice', icon: '✏️', path: '/invoices/create', roles: ['companyadmin', 'manager'] },
   { label: 'Purchases', icon: '🛒', path: '/purchases', roles: ['companyadmin', 'superadmin', 'manager'] },
   { label: 'Products', icon: '📦', path: '/products', roles: ['companyadmin', 'superadmin', 'manager'] },
-  { label: 'Reports', icon: '📈', path: '/reports', roles: [] },
+  { label: 'Reports', icon: '📈', path: '/reports', roles: ['companyadmin', 'superadmin'] },
   { label: 'Transport', icon: '🚚', path: '/transport', roles: ['companyadmin'] },
   { label: 'Employees', icon: '👥', path: '/employees', roles: ['companyadmin'] },
   { label: 'Settings', icon: '⚙️', path: '/settings', roles: ['companyadmin', 'superadmin', 'manager'] },
