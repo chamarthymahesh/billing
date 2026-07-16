@@ -76,7 +76,7 @@ exports.getNegativeStock = async (req, res) => {
 
     const filter = isAdminLike
       ? { stock: { $lt: 0 } }
-      : { companyId: req.user.companyId, stock: { $lt: 0 } };
+      : { companyId: { $in: [req.user.companyId, null] }, stock: { $lt: 0 } };
 
     const products = await Product.find(filter).populate('companyId', 'name').lean();
 
