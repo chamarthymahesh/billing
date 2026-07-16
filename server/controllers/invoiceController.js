@@ -238,70 +238,37 @@ exports.createInvoice = async (req, res) => {
             // Deduct stock from the source company (Real Stock Transfer)
             sourceProductWithStock.stock -= billedQty;
             await sourceProductWithStock.save();
-          } else {
-            // No company has enough stock — look for the most recent REAL purchase
-            // for THIS specific company's product only (not cross-company)
-            const existingPurchase = await Purchase.findOne({
-              productId: pid,
+            
+            const subTotal = billedQty * rate;
+            const gstAmount = (subTotal * (prod.gstRate || 0)) / 100;
+            const totalAmount = subTotal + gstAmount;
+            
+            await Purchase.create({
               companyId: companyId,
-              supplierName: { $nin: ['Auto Generated', 'Auto Transfer', ''] },
-              rate: { $gt: 0 }
-            }).sort({ purchaseDate: -1 });
+              productId: pid,
+              supplierName: supplierName,
+              supplierGstin: supplierGstin,
+              billNumber: `AUTO-TRANSFER-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              purchaseDate: new Date(),
+              quantity: billedQty,
+              rate: rate,
+              gstRate: prod.gstRate || 0,
+              subTotal: subTotal,
+              totalGst: gstAmount,
+              totalAmount: totalAmount,
+              isGst: (prod.gstRate || 0) > 0,
+              paymentStatus: 'Paid'
+            });
 
-            if (existingPurchase) {
-              // Use rate and supplier from the real historical purchase for THIS company
-              rate = existingPurchase.rate;
-              supplierName = existingPurchase.supplierName;
-              supplierGstin = existingPurchase.supplierGstin || '';
-            } else {
-              // Last resort: find any source company that has this product with a price
-              const productWithPrice = await Product.findOne({
-                name: { $regex: new RegExp(`^${prod.name}$`, 'i') },
-                companyId: { $nin: [null, companyId] },
-                $or: [
-                  { purchasePrice: { $gt: 0 } },
-                  { price: { $gt: 0 } }
-                ]
-              }).sort({ updatedAt: -1 }).populate('companyId', 'name gstin');
-
-              if (productWithPrice) {
-                rate = productWithPrice.purchasePrice || productWithPrice.price || rate;
-                supplierName = productWithPrice.companyId?.name || 'Auto Transfer';
-                supplierGstin = productWithPrice.companyId?.gstin || '';
-              } else {
-                // No source found at all
-                supplierName = 'Auto Transfer';
-              }
+            // Update product stock since we received a real transfer
+            const actualDeficit = billedQty - Math.max(prod.stock || 0, 0);
+            if (actualDeficit > 0) {
+              prod.stock = (prod.stock || 0) + actualDeficit;
+              await prod.save();
             }
-          }
-          
-          const subTotal = billedQty * rate;
-          const gstAmount = (subTotal * (prod.gstRate || 0)) / 100;
-          const totalAmount = subTotal + gstAmount;
-          
-          await Purchase.create({
-            companyId: companyId,
-            productId: pid,
-            supplierName: supplierName,
-            supplierGstin: supplierGstin,
-            billNumber: `AUTO-PUR-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-            purchaseDate: new Date(),
-            quantity: billedQty,
-            rate: rate,
-            gstRate: prod.gstRate || 0,
-            subTotal: subTotal,
-            totalGst: gstAmount,
-            totalAmount: totalAmount,
-            isGst: (prod.gstRate || 0) > 0,
-            paymentStatus: 'Paid'
-          });
-          // Update product stock ONLY if we actually needed it (i.e. we were deficient)
-          // If we already had artificial stock (e.g. 80), we just created a purchase record to balance the books,
-          // but we shouldn't double-count the stock.
-          const actualDeficit = billedQty - Math.max(prod.stock || 0, 0);
-          if (actualDeficit > 0) {
-            prod.stock = (prod.stock || 0) + actualDeficit;
-            await prod.save();
+          } else {
+            console.warn(`⚠️ No cross-company stock found for ${prod.name}. Letting stock go negative so it appears on Stock Adjustment.`);
+            // Intentionally doing NOTHING here. Stock will drop below 0 when the sale is recorded.
           }
         }
       }

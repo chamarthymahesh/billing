@@ -159,8 +159,7 @@ exports.deletePurchase = async (req, res) => {
         if (product) {
           // Decrease stock added by this purchase
           product.stock -= Number(quantity);
-          // Ensure stock does not go negative
-          if (product.stock < 0) product.stock = 0;
+          // Allowing stock to go negative if a purchase is deleted but sales exist
           await product.save();
         }
       }
