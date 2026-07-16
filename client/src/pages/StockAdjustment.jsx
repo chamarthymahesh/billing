@@ -21,16 +21,12 @@ export default function StockAdjustment() {
   const fetchNegativeStock = async () => {
     setLoading(true);
     try {
+      // Server already filters by company — just use the response directly
       const { data } = await API.get('/products/negative-stock');
-      // If the user is a company admin, ensure only their company (or global) data is shown
-      const isAdminLike = user.role === 'superadmin' || user.role === 'manager';
-      const filtered = isAdminLike
-        ? data
-        : data.filter(g => g.companyId === user.companyId || g.companyId === null || g.companyId === undefined || g.companyId === 'unknown');
-      setGroups(filtered);
+      setGroups(data);
       // Auto-expand all companies
       const expanded = {};
-      filtered.forEach(g => { expanded[g.companyId] = true; });
+      data.forEach(g => { expanded[g.companyId] = true; });
       setExpandedCompanies(expanded);
     } catch (err) {
       console.error(err);
