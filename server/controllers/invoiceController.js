@@ -129,68 +129,73 @@ exports.createInvoice = async (req, res) => {
         // Update item.productId to point to local clone
         item.productId = targetProd._id.toString();
         
-        // 2. Generate Sales Invoice in Source Company
-        const salesInvoiceNumber = `${sourceCompany.settings.invoicePrefix}/${sourceCompany.settings.fyPrefix}/${String(sourceCompany.settings.nextInvoiceNumber).padStart(3, '0')}`;
         const transferQty = Number(item.quantity);
-        const transferRate = Number(sourceProd.purchasePrice) || Number(sourceProd.price) || 0;
-        const transferAmount = transferQty * transferRate;
-        const transferGst = (transferAmount * (sourceProd.gstRate || 0)) / 100;
         
-        await Invoice.create({
-          companyId: sourceCompanyId,
-          invoiceNumber: salesInvoiceNumber,
-          date: new Date(),
-          isGst: true,
-          customer: {
-            name: company.name,
-            address: company.address || '',
-            gstin: company.gstin || '',
-            state: company.state || '',
-            placeOfSupply: company.state || ''
-          },
-          items: [{
-            productId: sourceProd._id,
-            description: sourceProd.name,
-            hsnCode: sourceProd.hsnCode,
+        if ((sourceProd.stock || 0) >= transferQty) {
+          // 2. Generate Sales Invoice in Source Company
+          const salesInvoiceNumber = `${sourceCompany.settings.invoicePrefix}/${sourceCompany.settings.fyPrefix}/${String(sourceCompany.settings.nextInvoiceNumber).padStart(3, '0')}`;
+          const transferRate = Number(sourceProd.purchasePrice) || Number(sourceProd.price) || 0;
+          const transferAmount = transferQty * transferRate;
+          const transferGst = (transferAmount * (sourceProd.gstRate || 0)) / 100;
+          
+          await Invoice.create({
+            companyId: sourceCompanyId,
+            invoiceNumber: salesInvoiceNumber,
+            date: new Date(),
+            isGst: true,
+            customer: {
+              name: company.name,
+              address: company.address || '',
+              gstin: company.gstin || '',
+              state: company.state || '',
+              placeOfSupply: company.state || ''
+            },
+            items: [{
+              productId: sourceProd._id,
+              description: sourceProd.name,
+              hsnCode: sourceProd.hsnCode,
+              quantity: transferQty,
+              rate: transferRate,
+              gstRate: sourceProd.gstRate,
+              amount: transferAmount,
+              total: transferAmount + transferGst
+            }],
+            subTotal: transferAmount,
+            totalGst: transferGst,
+            grandTotal: transferAmount + transferGst,
+            totalProfit: 0,
+            stockDeficit: (sourceProd.stock || 0) - transferQty < 0
+          });
+          
+          sourceCompany.settings.nextInvoiceNumber += 1;
+          await sourceCompany.save();
+          
+          sourceProd.stock = (sourceProd.stock || 0) - transferQty;
+          await sourceProd.save();
+          
+          // 3. Generate Purchase Bill in Target Company
+          await Purchase.create({
+            companyId: companyId,
+            billNumber: salesInvoiceNumber,
+            supplierName: sourceCompany.name,
+            supplierGstin: sourceCompany.gstin,
+            purchaseDate: new Date(),
+            productId: targetProd._id,
             quantity: transferQty,
             rate: transferRate,
-            gstRate: sourceProd.gstRate,
-            amount: transferAmount,
-            total: transferAmount + transferGst
-          }],
-          subTotal: transferAmount,
-          totalGst: transferGst,
-          grandTotal: transferAmount + transferGst,
-          totalProfit: 0,
-          stockDeficit: (sourceProd.stock || 0) - transferQty < 0
-        });
-        
-        sourceCompany.settings.nextInvoiceNumber += 1;
-        await sourceCompany.save();
-        
-        sourceProd.stock = (sourceProd.stock || 0) - transferQty;
-        await sourceProd.save();
-        
-        // 3. Generate Purchase Bill in Target Company
-        await Purchase.create({
-          companyId: companyId,
-          billNumber: salesInvoiceNumber,
-          supplierName: sourceCompany.name,
-          supplierGstin: sourceCompany.gstin,
-          purchaseDate: new Date(),
-          productId: targetProd._id,
-          quantity: transferQty,
-          rate: transferRate,
-          gstRate: sourceProd.gstRate || 0,
-          isGst: true,
-          paymentStatus: 'Paid',
-          subTotal: transferAmount,
-          totalGst: transferGst,
-          totalAmount: transferAmount + transferGst
-        });
-        
-        targetProd.stock = (targetProd.stock || 0) + transferQty;
-        await targetProd.save();
+            gstRate: sourceProd.gstRate || 0,
+            isGst: true,
+            paymentStatus: 'Paid',
+            subTotal: transferAmount,
+            totalGst: transferGst,
+            totalAmount: transferAmount + transferGst
+          });
+          
+          targetProd.stock = (targetProd.stock || 0) + transferQty;
+          await targetProd.save();
+        } else {
+          console.warn(`⚠️ Source company ${sourceCompany.name} does not have enough stock of ${sourceProd.name} for auto-transfer. Continuing without auto-transfer so stock goes negative.`);
+        }
       }
     }
     // --------------------------------------------------------------
