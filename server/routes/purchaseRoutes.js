@@ -9,8 +9,8 @@ router.get('/', protect, getPurchases);
 router.get('/global-stock', protect, superAdminOnly, getGlobalStock);
 router.get('/global-suppliers', protect, getGlobalSuppliers);
 router.get('/my-products', protect, getMyPurchasedProductIds);
-router.put('/bill/:billNumber', protect, updatePurchaseBill);
-router.delete('/bill/:billNumber', protect, deletePurchaseBill);
+router.put('/bill/update', protect, updatePurchaseBill);
+router.delete('/bill/delete', protect, deletePurchaseBill);
 router.put('/:id', protect, updatePurchase);
 router.delete('/:id', protect, deletePurchase);
 

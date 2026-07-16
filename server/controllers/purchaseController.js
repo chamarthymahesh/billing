@@ -174,7 +174,7 @@ exports.deletePurchase = async (req, res) => {
 
 exports.updatePurchaseBill = async (req, res) => {
   try {
-    const { billNumber } = req.params;
+    const billNumber = req.body.oldBillNumber;
     const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
     const companyId = isAdminLike ? req.body.companyId || req.user.companyId : req.user.companyId;
 
@@ -240,7 +240,7 @@ exports.updatePurchaseBill = async (req, res) => {
 
 exports.deletePurchaseBill = async (req, res) => {
   try {
-    const { billNumber } = req.params;
+    const billNumber = req.query.billNumber;
     const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
     const companyId = isAdminLike ? req.query.companyId : req.user.companyId;
 

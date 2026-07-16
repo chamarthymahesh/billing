@@ -320,6 +320,7 @@ export default function Purchases() {
         if (!item.productId) throw new Error("Please select a product for all items");
       }
       const payload = {
+        oldBillNumber: editForm.oldBillNumber,
         companyId: isAdminLike ? editForm.companyId : undefined,
         supplierName: editForm.supplierName,
         supplierGstin: editForm.supplierGstin,
@@ -332,7 +333,7 @@ export default function Purchases() {
         items: editForm.items
       };
       // Call the new group PUT route
-      await API.put(`/purchases/bill/${encodeURIComponent(editForm.oldBillNumber)}`, payload);
+      await API.put(`/purchases/bill/update`, payload);
       setShowEditModal(false);
       fetchPurchases();
     } catch (err) {
@@ -375,8 +376,8 @@ export default function Purchases() {
     try {
       const isAdminLike = user.role === 'superadmin' || user.role === 'manager';
       const compId = isAdminLike ? (billGroup?.items?.[0]?.companyId?._id || billGroup?.items?.[0]?.companyId) : '';
-      const queryStr = compId ? `?companyId=${encodeURIComponent(compId)}` : '';
-      await API.delete(`/purchases/bill/${encodeURIComponent(billNumber)}${queryStr}`);
+      const queryStr = compId ? `&companyId=${encodeURIComponent(compId)}` : '';
+      await API.delete(`/purchases/bill/delete?billNumber=${encodeURIComponent(billNumber)}${queryStr}`);
       fetchPurchases();
     } catch (err) {
       alert('Error deleting bill');
