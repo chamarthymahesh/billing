@@ -18,7 +18,7 @@ const Purchase = require('../models/Purchase');
  * 
  * Total invoice profit = sum of item profits - commission - transport charges
  */
-const calculateNetInvoiceProfit = (inv, purchases) => {
+const calculateNetInvoiceProfit = (inv, purchases, products = []) => {
   const itemProfitsSum = inv.items.reduce((sum, item) => {
     const sellingRate = Number(item.rate) || 0;
     const qty = Number(item.quantity) || 0;
@@ -60,6 +60,14 @@ const calculateNetInvoiceProfit = (inv, purchases) => {
       purchaseCostPerUnit = Number(item.purchasePrice) || 0;
     }
 
+    // Ultimate Fallback: use Product's base purchasePrice or price
+    if (purchaseCostPerUnit === 0 && products.length > 0) {
+      const prod = products.find(p => p._id.toString() === item.productId?.toString());
+      if (prod) {
+        purchaseCostPerUnit = Number(prod.purchasePrice) || Number(prod.price) || 0;
+      }
+    }
+
     // Item profit = (selling rate - purchase cost) * quantity
     const itemProfit = (sellingRate - purchaseCostPerUnit) * qty;
 
@@ -69,8 +77,9 @@ const calculateNetInvoiceProfit = (inv, purchases) => {
   // Subtract invoice-level deductions
   const commission = Number(inv.commission) || 0;
   const transportCharges = Number(inv.transportCharges) || 0;
+  const adjustment = Number(inv.adjustment) || 0;
 
-  return itemProfitsSum - commission - transportCharges;
+  return itemProfitsSum - commission - transportCharges + adjustment;
 };
 
 exports.calculateNetInvoiceProfit = calculateNetInvoiceProfit;
@@ -498,10 +507,11 @@ exports.getInvoices = async (req, res) => {
     
     const Purchase = require('../models/Purchase');
     const purchases = await Purchase.find(filter);
+    const products = await Product.find(filter);
     
     const processedInvoices = invoices.map(inv => {
       const plainInv = inv.toObject();
-      plainInv.totalProfit = calculateNetInvoiceProfit(inv, purchases);
+      plainInv.totalProfit = calculateNetInvoiceProfit(inv, purchases, products);
       return plainInv;
     });
 
@@ -521,9 +531,10 @@ exports.getInvoiceById = async (req, res) => {
     const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
     const filter = isAdminLike ? {} : { companyId: req.user.companyId };
     const purchases = await Purchase.find(filter);
+    const products = await Product.find(filter);
     
     const plainInv = invoice.toObject();
-    plainInv.totalProfit = calculateNetInvoiceProfit(invoice, purchases);
+    plainInv.totalProfit = calculateNetInvoiceProfit(invoice, purchases, products);
 
     res.json(plainInv);
   } catch (error) {
@@ -539,9 +550,10 @@ exports.getReports = async (req, res) => {
     
     const Purchase = require('../models/Purchase');
     const purchases = await Purchase.find(filter);
+    const products = await Product.find(filter);
 
     // Calculate total net profit for each invoice using helper
-    const calculatedTotalProfit = invoices.reduce((sum, inv) => sum + calculateNetInvoiceProfit(inv, purchases), 0);
+    const calculatedTotalProfit = invoices.reduce((sum, inv) => sum + calculateNetInvoiceProfit(inv, purchases, products), 0);
 
     const stats = {
       totalSales: invoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
