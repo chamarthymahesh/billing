@@ -112,7 +112,7 @@ export default function Purchases() {
 
   const fetchCompanies = async () => {
     try {
-      const { data } = await API.get('/companies');
+      const { data } = await API.get('/companies/list');
       setCompanies(data);
     } catch (err) {
       console.error(err);
@@ -132,7 +132,7 @@ export default function Purchases() {
     fetchPurchases();
     fetchProducts();
     fetchGlobalSuppliers();
-    if (user?.role === 'superadmin') {
+    if (user?.role === 'superadmin' || user?.role === 'manager') {
       fetchCompanies();
     }
   }, [user]);
@@ -252,7 +252,8 @@ export default function Purchases() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (user.role === 'superadmin' && !form.companyId) {
+    const isAdminLike = user.role === 'superadmin' || user.role === 'manager';
+    if (isAdminLike && !form.companyId) {
       alert("Please select a target company");
       return;
     }
@@ -266,7 +267,7 @@ export default function Purchases() {
       const promises = form.items.map(item => {
         if (!item.productId) throw new Error("Please select a product for all items");
         const payload = {
-          companyId: user.role === 'superadmin' ? form.companyId : undefined,
+          companyId: isAdminLike ? form.companyId : undefined,
           supplierName: form.supplierName,
           supplierGstin: form.supplierGstin,
           billNumber: form.billNumber,
@@ -308,7 +309,8 @@ export default function Purchases() {
 
   const handleEditSave = async (e) => {
     e.preventDefault();
-    if (user.role === 'superadmin' && !editForm.companyId) {
+    const isAdminLike = user.role === 'superadmin' || user.role === 'manager';
+    if (isAdminLike && !editForm.companyId) {
       alert("Please select a target company");
       return;
     }
@@ -318,7 +320,7 @@ export default function Purchases() {
         if (!item.productId) throw new Error("Please select a product for all items");
       }
       const payload = {
-        companyId: user.role === 'superadmin' ? editForm.companyId : undefined,
+        companyId: isAdminLike ? editForm.companyId : undefined,
         supplierName: editForm.supplierName,
         supplierGstin: editForm.supplierGstin,
         billNumber: editForm.billNumber,
@@ -371,7 +373,8 @@ export default function Purchases() {
   const handleDeleteBill = async (billNumber, billGroup) => {
     if (!window.confirm('Are you sure you want to delete this entire bill? This will reduce the product stock for all items.')) return;
     try {
-      const compId = user.role === 'superadmin' ? (billGroup?.items?.[0]?.companyId?._id || billGroup?.items?.[0]?.companyId) : '';
+      const isAdminLike = user.role === 'superadmin' || user.role === 'manager';
+      const compId = isAdminLike ? (billGroup?.items?.[0]?.companyId?._id || billGroup?.items?.[0]?.companyId) : '';
       const queryStr = compId ? `?companyId=${encodeURIComponent(compId)}` : '';
       await API.delete(`/purchases/bill/${encodeURIComponent(billNumber)}${queryStr}`);
       fetchPurchases();
@@ -522,7 +525,7 @@ export default function Purchases() {
               </div>
               <form onSubmit={handleSubmit} className="modal-form">
                 <div className="form-grid-2" style={{ marginBottom: '20px' }}>
-                  {user?.role === 'superadmin' && (
+                  {(user?.role === 'superadmin' || user?.role === 'manager') && (
                     <div className="form-group">
                       <label>Target Company *</label>
                       <select 
@@ -692,7 +695,7 @@ export default function Purchases() {
               </div>
               <form onSubmit={handleEditSave} className="modal-form">
                 <div className="form-grid-2" style={{ marginBottom: '20px' }}>
-                  {user?.role === 'superadmin' && (
+                  {(user?.role === 'superadmin' || user?.role === 'manager') && (
                     <div className="form-group">
                       <label>Target Company *</label>
                       <select 

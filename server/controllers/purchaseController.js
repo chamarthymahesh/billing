@@ -175,7 +175,8 @@ exports.deletePurchase = async (req, res) => {
 exports.updatePurchaseBill = async (req, res) => {
   try {
     const { billNumber } = req.params;
-    const companyId = req.user.role === 'superadmin' ? req.body.companyId || req.user.companyId : req.user.companyId;
+    const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
+    const companyId = isAdminLike ? req.body.companyId || req.user.companyId : req.user.companyId;
 
     const existingPurchases = await Purchase.find({ billNumber, companyId });
     if (!existingPurchases.length) return res.status(404).json({ message: 'Bill not found' });
@@ -240,7 +241,8 @@ exports.updatePurchaseBill = async (req, res) => {
 exports.deletePurchaseBill = async (req, res) => {
   try {
     const { billNumber } = req.params;
-    const companyId = req.user.role === 'superadmin' ? req.query.companyId : req.user.companyId;
+    const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
+    const companyId = isAdminLike ? req.query.companyId : req.user.companyId;
 
     const existingPurchases = await Purchase.find({ billNumber, companyId });
     if (!existingPurchases.length) return res.status(404).json({ message: 'Bill not found' });
