@@ -22,10 +22,15 @@ export default function StockAdjustment() {
     setLoading(true);
     try {
       const { data } = await API.get('/products/negative-stock');
-      setGroups(data);
+      // If the user is a company admin, ensure only their company (or global) data is shown
+      const isAdminLike = user.role === 'superadmin' || user.role === 'manager';
+      const filtered = isAdminLike
+        ? data
+        : data.filter(g => g.companyId === user.companyId || g.companyId === null || g.companyId === undefined);
+      setGroups(filtered);
       // Auto-expand all companies
       const expanded = {};
-      data.forEach(g => { expanded[g.companyId] = true; });
+      filtered.forEach(g => { expanded[g.companyId] = true; });
       setExpandedCompanies(expanded);
     } catch (err) {
       console.error(err);
