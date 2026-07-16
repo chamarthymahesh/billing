@@ -518,7 +518,7 @@ export default function Purchases() {
         {/* ADD FORM */}
         {showForm && (
           <div className="modal-overlay">
-            <motion.div className="modal glass-card" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ maxWidth: '900px', width: '95%' }}>
+            <motion.div className="modal glass-card" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ maxWidth: '1400px', width: '98%', maxHeight: '95vh' }}>
               <div className="modal-header">
                 <h2>Record New Purchase Bill</h2>
                 <button className="close-btn" onClick={() => setShowForm(false)}>✕</button>
@@ -578,12 +578,12 @@ export default function Purchases() {
                   </div>
                 </div>
 
-                <div className="items-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div className="items-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '20px 0 10px 0' }}>
                   <h3 style={{ margin: 0 }}>Products in this Bill</h3>
                   <button type="button" className="btn-primary btn-sm" onClick={() => addItem()}>+ Add Item</button>
                 </div>
                 
-                <div className="table-wrap" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <div className="table-wrap" style={{ maxHeight: '55vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
                   <table className="items-table">
                     <thead>
                       <tr>
@@ -688,7 +688,7 @@ export default function Purchases() {
         {/* EDIT FORM */}
         {showEditModal && editForm && (
           <div className="modal-overlay">
-            <motion.div className="modal glass-card" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ maxWidth: '900px', width: '95%' }}>
+            <motion.div className="modal glass-card" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ maxWidth: '1400px', width: '98%', maxHeight: '95vh' }}>
               <div className="modal-header">
                 <h2>Edit Purchase Bill</h2>
                 <button className="close-btn" onClick={() => setShowEditModal(false)}>✕</button>
@@ -748,12 +748,12 @@ export default function Purchases() {
                   </div>
                 </div>
 
-                <div className="items-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div className="items-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '20px 0 10px 0' }}>
                   <h3 style={{ margin: 0 }}>Products in this Bill</h3>
                   <button type="button" className="btn-primary btn-sm" onClick={() => addItem(true)}>+ Add Item</button>
                 </div>
                 
-                <div className="table-wrap" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <div className="table-wrap" style={{ maxHeight: '55vh', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}>
                   <table className="items-table">
                     <thead>
                       <tr>
