@@ -72,28 +72,52 @@ exports.deleteProduct = async (req, res) => {
 exports.getNegativeStock = async (req, res) => {
   try {
     const Company = require('../models/Company');
+    const Invoice = require('../models/Invoice');
     const isSuperAdmin = req.user.role === 'superadmin';
-    const isManager = req.user.role === 'manager';
 
-    let filter;
+    let products;
+
     if (isSuperAdmin) {
       // Superadmin sees ALL companies' negative stock
-      filter = { stock: { $lt: 0 } };
-    } else if (isManager) {
-      // Manager sees only their own company's negative stock
-      filter = { companyId: req.user.companyId, stock: { $lt: 0 } };
+      products = await Product.find({ stock: { $lt: 0 } }).populate('companyId', 'name').lean();
     } else {
-      // Company admin / staff: only their own company — no null/global products
-      filter = { companyId: req.user.companyId, stock: { $lt: 0 } };
+      // For company users: find all productIds used in their own invoices
+      const companyInvoices = await Invoice.find({ companyId: req.user.companyId }).select('items').lean();
+      const usedProductIds = new Set();
+      companyInvoices.forEach(inv => {
+        (inv.items || []).forEach(item => {
+          if (item.productId) usedProductIds.add(item.productId.toString());
+        });
+      });
+
+      // Show ANY negative-stock product that was used in this company's invoices
+      // This covers:
+      //   1. Own company products (companyId = this company)
+      //   2. Global/null companyId products used in their invoices
+      //   3. Cross-company products (e.g. from LAXMI) where auto-transfer couldn't complete due to no stock
+      products = await Product.find({
+        stock: { $lt: 0 },
+        _id: { $in: Array.from(usedProductIds) }
+      }).populate('companyId', 'name').lean();
     }
 
-    const products = await Product.find(filter).populate('companyId', 'name').lean();
-
-    // Group by company
+    // Group by company (show company name or "Your Company" for global products)
     const grouped = {};
+    const myCompanyId = req.user.companyId?.toString() || 'mine';
+
     for (const p of products) {
-      const cId = p.companyId?._id?.toString() || 'unknown';
-      const cName = p.companyId?.name || 'Unknown Company';
+      let cId = p.companyId?._id?.toString() || p.companyId?.toString() || null;
+      let cName = p.companyId?.name;
+
+      // Global products (null companyId) shown under the requesting company
+      if (!cId) {
+        cId = myCompanyId;
+        // Fetch requesting company name if not already set
+        if (!cName) {
+          const myCompany = await Company.findById(req.user.companyId).select('name').lean();
+          cName = myCompany?.name || 'Your Company';
+        }
+      }
 
       if (!grouped[cId]) grouped[cId] = { companyId: cId, companyName: cName, products: [] };
       grouped[cId].products.push({
@@ -113,3 +137,4 @@ exports.getNegativeStock = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
