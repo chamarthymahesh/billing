@@ -109,7 +109,8 @@ exports.createPurchase = async (req, res) => {
 
 exports.getPurchases = async (req, res) => {
   try {
-    const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
+    const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
+    const filter = isAdminLike ? {} : { companyId: req.user.companyId };
     const purchases = await Purchase.find(filter)
       .populate('productId', 'name sku')
       .populate('companyId', 'name')

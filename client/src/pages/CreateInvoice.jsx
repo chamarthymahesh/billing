@@ -112,7 +112,8 @@ export default function CreateInvoice() {
   const [supplierSuggestions, setSupplierSuggestions] = useState([]);
   const [companies, setCompanies] = useState([]); // Array of registered companies
   const [currentCompany, setCurrentCompany] = useState(null);
-  // Removed duplicate customer state declarations; they are defined earlier.
+  // For managers: selected company to create invoice for
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
 
   const [form, setForm] = useState({
     isGst: true,
@@ -138,19 +139,25 @@ export default function CreateInvoice() {
     materialDeliveryStatus: 'Pending'
   });
 
+  const effectiveCompanyId = user.role === 'manager' ? selectedCompanyId : user.companyId;
+
   useEffect(() => {
     // Fetch customers and suppliers data
+    const companyFetch = effectiveCompanyId
+      ? API.get(`/companies/${effectiveCompanyId}`).catch(() => ({ data: null }))
+      : Promise.resolve({ data: null });
+
     Promise.all([
       API.get('/products'),
       API.get('/invoices'),
-      API.get(`/companies/${user.companyId}`),
+      companyFetch,
       API.get('/companies/list'),
       API.get('/purchases/my-products').catch(() => ({ data: [] }))
     ]).then(([prodRes, invRes, compRes, compListRes, myProdsRes]) => {
       // Deduplicate and normalize products
       const rawProducts = prodRes.data || [];
-      const myProducts = rawProducts.filter(p => p.companyId === user?.companyId);
-      const otherProducts = rawProducts.filter(p => p.companyId !== user?.companyId);
+      const myProducts = rawProducts.filter(p => p.companyId === effectiveCompanyId);
+      const otherProducts = rawProducts.filter(p => p.companyId !== effectiveCompanyId);
       
       const myProductNames = new Set(myProducts.map(p => (p.name || '').toUpperCase().trim()));
       
@@ -215,7 +222,7 @@ export default function CreateInvoice() {
         return nextForm;
       });
     }).catch(() => {});
-  }, [user.companyId, id]);
+  }, [effectiveCompanyId, id]);
 
   useEffect(() => {
     if (id) {
@@ -389,6 +396,11 @@ export default function CreateInvoice() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (user.role === 'manager' && !selectedCompanyId) {
+      alert('Please select a target company first.');
+      setLoading(false);
+      return;
+    }
     // Ensure supplier name is provided
     if (!form.supplier?.name) {
       alert('Supplier Name is required.');
@@ -400,7 +412,7 @@ export default function CreateInvoice() {
       const payload = {
         ...form,
         commission: calculatedCommission,
-        companyId: user.companyId,
+        companyId: effectiveCompanyId,
         subTotal,
         totalGst,
         grandTotal,
@@ -445,6 +457,26 @@ export default function CreateInvoice() {
           >Non-GST Invoice</button>
         </div>
       </div>
+
+      {/* Manager: Company Selector */}
+      {user?.role === 'manager' && (
+        <div className="glass-card form-section" style={{ marginBottom: '20px', padding: '16px 20px' }}>
+          <div className="form-group" style={{ maxWidth: '400px' }}>
+            <label style={{ fontWeight: '600', color: '#f59e0b' }}>⚠️ Target Company *</label>
+            <select
+              className="input-field highlight-input"
+              required
+              value={selectedCompanyId}
+              onChange={e => setSelectedCompanyId(e.target.value)}
+            >
+              <option value="">-- Select Company to Invoice For --</option>
+              {companies.map(c => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="invoice-form">
         {/* Invoice Meta */}

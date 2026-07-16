@@ -156,7 +156,7 @@ export default function Invoices() {
             </select>
           </div>
           
-          {selectedInvoices.length > 0 && user?.role === 'companyadmin' && (
+          {selectedInvoices.length > 0 && (user?.role === 'companyadmin' || user?.role === 'manager') && (
             <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 'bold', color: '#93c5fd' }}>{selectedInvoices.length} invoices selected</span>
               
@@ -180,7 +180,7 @@ export default function Invoices() {
             <table className="data-table">
               <thead>
                 <tr>
-                  {user?.role === 'companyadmin' && (
+                  {(user?.role === 'companyadmin' || user?.role === 'manager') && (
                     <th style={{ width: '40px', textAlign: 'center' }}>
                       <input 
                         type="checkbox" 
@@ -211,7 +211,7 @@ export default function Invoices() {
                   if (!inv) return null;
                   return (
                     <tr key={inv._id} style={{ background: selectedInvoices.includes(inv._id) ? 'rgba(59, 130, 246, 0.05)' : '' }}>
-                      {user?.role === 'companyadmin' && (
+                      {(user?.role === 'companyadmin' || user?.role === 'manager') && (
                         <td style={{ textAlign: 'center' }}>
                           <input 
                             type="checkbox" 
@@ -231,7 +231,7 @@ export default function Invoices() {
                       <td>₹{(inv.transportCharges || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td className="grand-total">₹{(inv.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td>
-                        {user?.role === 'companyadmin' ? (
+                        {(user?.role === 'companyadmin' || user?.role === 'manager') ? (
                           <select
                             className="status-select"
                             value={inv.status || 'unpaid'}
@@ -248,7 +248,7 @@ export default function Invoices() {
                         )}
                       </td>
                       <td>
-                        {user?.role === 'companyadmin' ? (
+                        {(user?.role === 'companyadmin' || user?.role === 'manager') ? (
                           <select
                             className="status-select"
                             style={{ 
@@ -287,7 +287,7 @@ export default function Invoices() {
                       <td>
                         <div className="action-btns" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                           <Link to={`/invoices/${inv._id}`} className="action-btn view" style={{ padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} title="View Invoice">👁️</Link>
-                          {user?.role === 'companyadmin' && (
+                          {(user?.role === 'companyadmin' || user?.role === 'manager') && (
                             <>
                               <Link to={`/invoices/edit/${inv._id}`} className="action-btn edit" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', border: '1px solid rgba(99, 102, 241, 0.2)', textDecoration: 'none', padding: '4px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', fontSize: '12px' }} title="Edit Invoice">✏️</Link>
                               {user?.role !== 'manager' && (

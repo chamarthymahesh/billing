@@ -492,7 +492,8 @@ exports.createInvoice = async (req, res) => {
 
 exports.getInvoices = async (req, res) => {
   try {
-    const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
+    const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
+    const filter = isAdminLike ? {} : { companyId: req.user.companyId };
     const invoices = await Invoice.find(filter).populate('companyId', 'name').sort({ date: -1, createdAt: -1 });
     
     const Purchase = require('../models/Purchase');
@@ -517,7 +518,8 @@ exports.getInvoiceById = async (req, res) => {
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
     const Purchase = require('../models/Purchase');
-    const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
+    const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
+    const filter = isAdminLike ? {} : { companyId: req.user.companyId };
     const purchases = await Purchase.find(filter);
     
     const plainInv = invoice.toObject();
@@ -531,7 +533,8 @@ exports.getInvoiceById = async (req, res) => {
 
 exports.getReports = async (req, res) => {
   try {
-    const filter = req.user.role === 'superadmin' ? {} : { companyId: req.user.companyId };
+    const isAdminLike = req.user.role === 'superadmin' || req.user.role === 'manager';
+    const filter = isAdminLike ? {} : { companyId: req.user.companyId };
     const invoices = await Invoice.find(filter);
     
     const Purchase = require('../models/Purchase');

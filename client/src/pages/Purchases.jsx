@@ -60,6 +60,7 @@ export default function Purchases() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [globalSuppliers, setGlobalSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -118,9 +119,19 @@ export default function Purchases() {
     }
   };
 
+  const fetchGlobalSuppliers = async () => {
+    try {
+      const { data } = await API.get('/purchases/global-suppliers');
+      setGlobalSuppliers(data || []);
+    } catch (err) {
+      console.error('Failed to fetch global suppliers:', err);
+    }
+  };
+
   useEffect(() => {
     fetchPurchases();
     fetchProducts();
+    fetchGlobalSuppliers();
     if (user?.role === 'superadmin') {
       fetchCompanies();
     }
@@ -143,7 +154,27 @@ export default function Purchases() {
     return Object.values(map);
   }, [purchases]);
 
-  const supplierSuggestions = localSupplierSuggestions;
+  // Merge local purchase suppliers with global suppliers (all companies + all historical suppliers)
+  const supplierSuggestions = useMemo(() => {
+    const merged = {};
+    // First add global suppliers (includes all companies and all purchase history)
+    globalSuppliers.forEach(s => {
+      if (!s.name) return;
+      const key = s.name.toLowerCase();
+      merged[key] = { name: s.name, gstin: s.gstin || '' };
+    });
+    // Then overlay with local suggestions (may have more up-to-date GSTINs)
+    localSupplierSuggestions.forEach(s => {
+      if (!s.name) return;
+      const key = s.name.toLowerCase();
+      if (!merged[key]) {
+        merged[key] = { name: s.name, gstin: s.gstin || '' };
+      } else if (!merged[key].gstin && s.gstin) {
+        merged[key].gstin = s.gstin;
+      }
+    });
+    return Object.values(merged).sort((a, b) => a.name.localeCompare(b.name));
+  }, [globalSuppliers, localSupplierSuggestions]);
 
   const handleSupplierName = (val, isEdit = false) => {
     let gstin = isEdit ? editForm.supplierGstin : form.supplierGstin;
