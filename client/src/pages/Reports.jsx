@@ -473,7 +473,7 @@ export default function Reports() {
                         <tr><td colSpan="7" className="empty-row">No invoices found for the selected range</td></tr>
                       ) : filteredInvoices.map(inv => {
                         const profit = Math.round((inv.totalProfit || 0) * 100) / 100;
-                        const revenue = Math.round((inv.grandTotal || 0) * 100) / 100;
+                        const revenue = Math.round((inv.subTotal || 0) * 100) / 100;
                         const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : 0;
                         const deductions = Math.round((revenue - profit) * 100) / 100;
                         // Prevent -0.00 display

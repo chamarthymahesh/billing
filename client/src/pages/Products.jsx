@@ -365,7 +365,12 @@ export default function Products() {
                 ) : filtered.map(p => (
                   <tr key={p._id}>
                     <td>
-                      <div className="product-name">{p.name}</div>
+                      <div className="product-name">
+                        {p.name}
+                        {p.companyId && String(p.companyId) !== String(user?.companyId) && p.stock > 0 && (
+                          <span title="Auto-Transfer Available" style={{ marginLeft: '8px', cursor: 'help' }}>🌐</span>
+                        )}
+                      </div>
                       <div className="product-meta">SKU: {p.sku || 'N/A'} | HSN: {p.hsnCode || 'N/A'}</div>
                     </td>
                     <td>
