@@ -194,7 +194,31 @@ exports.createInvoice = async (req, res) => {
           targetProd.stock = (targetProd.stock || 0) + transferQty;
           await targetProd.save();
         } else {
-          console.warn(`⚠️ Source company ${sourceCompany.name} does not have enough stock of ${sourceProd.name} for auto-transfer. Continuing without auto-transfer so stock goes negative.`);
+          // Source doesn't have enough stock — create a PENDING purchase for target company
+          // so it shows in Purchases page and Stock Adjustment for action
+          const transferRate = Number(sourceProd.purchasePrice) || Number(sourceProd.price) || 0;
+          const transferAmount = transferQty * transferRate;
+          const transferGst = (transferAmount * (sourceProd.gstRate || 0)) / 100;
+          const pendingBillNumber = `PENDING-${sourceCompany.name.substring(0,6).toUpperCase()}-${Date.now()}`;
+          
+          await Purchase.create({
+            companyId: companyId,
+            billNumber: pendingBillNumber,
+            supplierName: sourceCompany.name,
+            supplierGstin: sourceCompany.gstin || '',
+            purchaseDate: new Date(),
+            productId: targetProd._id,
+            quantity: transferQty,
+            rate: transferRate || 1,
+            gstRate: sourceProd.gstRate || 0,
+            isGst: (sourceProd.gstRate || 0) > 0,
+            paymentStatus: 'Pending',
+            subTotal: transferAmount,
+            totalGst: transferGst,
+            totalAmount: transferAmount + transferGst
+          });
+          
+          console.warn(`⚠️ ${sourceCompany.name} has no stock of ${sourceProd.name}. Created PENDING purchase for ${company.name}.`);
         }
       }
     }

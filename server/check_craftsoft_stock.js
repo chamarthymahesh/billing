@@ -1,43 +1,32 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
-const Product = require('./models/Product');
-const Company = require('./models/Company');
-const Invoice = require('./models/Invoice');
 
 async function check() {
   await mongoose.connect(process.env.MONGO_URI);
 
-  const company = await Company.findOne({ name: /CRAFTSOFT/i });
-  console.log('✅ Company:', company.name, '| ID:', company._id.toString());
+  // Use raw collection queries to avoid populate issues
+  const Purchase = require('./models/Purchase');
+  const Product = require('./models/Product');
+  const Company = require('./models/Company');
 
-  // Simulate what getNegativeStock will now do for CRAFTSOFT
-  const companyInvoices = await Invoice.find({ companyId: company._id }).select('items').lean();
-  const usedProductIds = new Set();
-  companyInvoices.forEach(inv => {
-    (inv.items || []).forEach(item => {
-      if (item.productId) usedProductIds.add(item.productId.toString());
-    });
-  });
-  console.log(`\n📋 Products in CRAFTSOFT invoices: ${usedProductIds.size}`);
+  const company = await Company.findOne({ name: /CRAFTSOFT/i }).lean();
+  console.log('✅ CRAFTSOFT ID:', company._id.toString());
 
-  const products = await Product.find({
-    stock: { $lt: 0 },
-    _id: { $in: Array.from(usedProductIds) }
-  }).populate('companyId', 'name').lean();
+  // How many purchases exist for CRAFTSOFT?
+  const purchases = await Purchase.find({ companyId: company._id }).lean();
+  console.log(`\n📦 CRAFTSOFT purchases in DB: ${purchases.length}`);
+  for (const p of purchases) {
+    const prod = await Product.findById(p.productId).select('name').lean();
+    console.log(`  - ${prod?.name || 'Unknown'} | qty: ${p.quantity} | bill: ${p.billNumber} | supplier: ${p.supplierName}`);
+  }
 
-  console.log(`\n⚠️  Products that will show in CRAFTSOFT Stock Adjustment: ${products.length}`);
-  products.forEach(p => {
-    const owner = p.companyId?.name || 'Global/Null';
-    console.log(`  - ${p.name} | owned by: ${owner} | stock: ${p.stock}`);
-  });
-
-  if (products.length === 0) {
-    console.log('\n  → Still empty! Checking why...');
-    const allInInvoice = await Product.find({ _id: { $in: Array.from(usedProductIds) } }).populate('companyId', 'name').lean();
-    console.log('\n  All invoice products and their stock:');
-    allInInvoice.forEach(p => {
-      console.log(`    - ${p.name} | owner: ${p.companyId?.name || 'Global'} | stock: ${p.stock}`);
-    });
+  // How many total purchases in DB?
+  const allPurchases = await Purchase.find({}).lean();
+  console.log(`\n📦 ALL purchases in entire DB: ${allPurchases.length}`);
+  for (const p of allPurchases) {
+    const comp = await Company.findById(p.companyId).select('name').lean();
+    const prod = await Product.findById(p.productId).select('name').lean();
+    console.log(`  - [${comp?.name || 'No company'}] ${prod?.name || 'Unknown'} | qty: ${p.quantity} | bill: ${p.billNumber}`);
   }
 
   await mongoose.disconnect();

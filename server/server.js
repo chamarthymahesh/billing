@@ -66,6 +66,7 @@ const productRoutes = require('./routes/productRoutes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
 const transportRoutes = require('./routes/transportRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/companies', companyRoutes);
@@ -74,6 +75,50 @@ app.use('/api/products', productRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/transport', transportRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/reports', reportRoutes);
+
+// Setup cron job for GSTR-1
+const cron = require('node-cron');
+const { generateGSTR1Report } = require('./controllers/gstr1Controller');
+const fs = require('fs');
+
+// Run daily at midnight to generate report for previous month if not exists
+cron.schedule(process.env.GSTR1_CRON || '0 0 * * *', async () => {
+  console.log('Running daily GSTR-1 cron job...');
+  try {
+    const date = new Date();
+    let month = date.getMonth(); // previous month
+    let year = date.getFullYear();
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+    
+    // Using a mock req/res for controller
+    const req = { query: { month, year } };
+    
+    // In a real multi-tenant scenario, we might iterate over companies
+    const Company = require('./models/Company');
+    const companies = await Company.find({ isActive: true });
+    
+    const reportsDir = path.join(__dirname, process.env.GSTR1_OUTPUT_DIR || 'reports');
+    if (!fs.existsSync(reportsDir)) {
+      fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    for (const company of companies) {
+      req.user = { companyId: company._id }; // Mock user
+      const payload = await generateGSTR1Report(req, null); // passing null res to return data directly
+      if (payload) {
+        const filePath = path.join(reportsDir, `gstr1_${company._id}_${year}_${month}.json`);
+        fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
+        console.log(`Saved GSTR-1 for ${company.name} at ${filePath}`);
+      }
+    }
+  } catch (error) {
+    console.error('Cron job error:', error);
+  }
+});
 
 const PORT = process.env.PORT || 5000;
 
